@@ -3,9 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { listingSchema } from "@/lib/validations/listing";
-import { slugify, uniqueSlug } from "@/lib/utils";
+import { uniqueSlug } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { deleteUploadedFiles } from "@/lib/uploadthing-server";
+import { type Condition, type FuelType, type Transmission, type VehicleType } from "@prisma/client";
 
 export type ActionState = {
   success: boolean;
@@ -17,59 +19,112 @@ export async function createListing(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requireUser(); // redirects to /login if not signed in
+  const user = await requireUser();
 
-  const raw = Object.fromEntries(formData);
+  const imagesInput = formData.get("images");
+  let images: { url: string; key: string }[] = [];
 
-  let images: unknown = [];
-  try {
-    images = JSON.parse(String(formData.get("images") ?? "[]"));
-  } catch {
-    return { success: false, message: "Something went wrong with your photos. Try re-uploading." };
+  if (typeof imagesInput === "string" && imagesInput.trim()) {
+    try {
+      const parsed = JSON.parse(imagesInput);
+      if (Array.isArray(parsed)) {
+        images = parsed.filter(
+          (image): image is { url: string; key: string } =>
+            typeof image?.url === "string" && typeof image?.key === "string",
+        );
+      }
+    } catch {
+      // malformed payloads are handled by validation below
+    }
   }
 
-  const parsed = listingSchema.safeParse({
-    ...raw,
-    negotiable: formData.get("negotiable") === "on",
+  const payload = {
+    vehicleType: formData.get("vehicleType"),
+    condition: formData.get("condition"),
+    brandId: formData.get("brandId"),
+    modelId: formData.get("modelId"),
+    trim: formData.get("trim"),
+    year: formData.get("year"),
+    mileage: formData.get("mileage"),
+    fuelType: formData.get("fuelType"),
+    transmission: formData.get("transmission"),
+    engineCc: formData.get("engineCc"),
+    exteriorColor: formData.get("exteriorColor"),
+    price: formData.get("price"),
+    negotiable: formData.get("negotiable") === "on" || formData.get("negotiable") === "true",
+    districtId: formData.get("districtId"),
+    city: formData.get("city"),
+    contactName: formData.get("contactName"),
+    contactPhone: formData.get("contactPhone"),
+    description: formData.get("description"),
     images,
-  });
+  };
+
+  const parsed = listingSchema.safeParse(payload);
 
   if (!parsed.success) {
+    const fieldErrors: Record<string, string[]> = {};
+
+    for (const issue of parsed.error.issues) {
+      const key = (issue.path[0] ?? "form").toString();
+      fieldErrors[key] ??= [];
+      fieldErrors[key].push(issue.message);
+    }
+
     return {
       success: false,
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      message: "Please fix the highlighted fields and try again.",
+      fieldErrors,
     };
   }
 
   const data = parsed.data;
-
   const [brand, model] = await Promise.all([
     prisma.brand.findUnique({ where: { id: data.brandId } }),
     data.modelId ? prisma.model.findUnique({ where: { id: data.modelId } }) : null,
   ]);
 
   if (!brand) {
-    return { success: false, message: "Selected brand no longer exists." };
+    return {
+      success: false,
+      message: "The selected brand could not be found.",
+      fieldErrors: { brandId: ["Select a valid brand"] },
+    };
   }
 
-  const titleParts = [brand.name, model?.name, String(data.year), data.trim].filter(Boolean);
-  const title = titleParts.join(" ");
-  const slug = uniqueSlug(title);
+  if (data.modelId && !model) {
+    return {
+      success: false,
+      message: "The selected model is no longer available.",
+      fieldErrors: { modelId: ["Select a valid model"] },
+    };
+  }
+
+  const titleParts = [brand.name, model?.name, data.trim, String(data.year)];
+  const title = titleParts.filter(Boolean).join(" ").trim() || `${brand.name} vehicle`;
+
+  let slug = uniqueSlug(title);
+  let suffix = 1;
+
+  while (await prisma.listing.findUnique({ where: { slug } })) {
+    slug = uniqueSlug(`${title}-${suffix}`);
+    suffix += 1;
+  }
 
   const listing = await prisma.listing.create({
     data: {
-      slug,
       title,
+      slug,
       description: data.description,
-      vehicleType: data.vehicleType as never,
-      condition: data.condition as never,
+      vehicleType: data.vehicleType as VehicleType,
+      condition: data.condition as Condition,
       brandId: data.brandId,
       modelId: data.modelId || null,
       trim: data.trim || null,
       year: data.year,
       mileage: data.mileage ?? null,
-      fuelType: data.fuelType as never,
-      transmission: data.transmission as never,
+      fuelType: data.fuelType as FuelType,
+      transmission: data.transmission as Transmission,
       engineCc: data.engineCc ?? null,
       exteriorColor: data.exteriorColor || null,
       price: data.price,
@@ -78,17 +133,47 @@ export async function createListing(
       city: data.city,
       contactName: data.contactName,
       contactPhone: data.contactPhone,
+      status: "PENDING",
       userId: user.id,
-      images: {
-        create: data.images.map((img, i) => ({
-          url: img.url,
-          key: img.key,
-          order: i,
-        })),
-      },
     },
   });
 
-  revalidatePath("/vehicles");
-  redirect(`/vehicles/${listing.slug}`);
+  await prisma.listingImage.createMany({
+    data: data.images.map((image, index) => ({
+      listingId: listing.id,
+      url: image.url,
+      key: image.key,
+      order: index,
+    })),
+  });
+
+  revalidatePath("/dashboard/ads");
+  redirect("/dashboard/ads");
+}
+
+export async function markAsSold(listingId: string) {
+  const user = await requireUser();
+
+  await prisma.listing.updateMany({
+    where: { id: listingId, userId: user.id },
+    data: { status: "SOLD" },
+  });
+
+  revalidatePath("/dashboard/ads");
+}
+
+export async function deleteListing(listingId: string) {
+  const user = await requireUser();
+
+  const listing = await prisma.listing.findFirst({
+    where: { id: listingId, userId: user.id },
+    include: { images: true },
+  });
+
+  if (!listing) return;
+
+  await deleteUploadedFiles(listing.images.map((i) => i.key));
+  await prisma.listing.delete({ where: { id: listingId } });
+
+  revalidatePath("/dashboard/ads");
 }

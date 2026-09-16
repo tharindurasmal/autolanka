@@ -30,7 +30,7 @@ export function Gallery({ images, title }: { images: ListingImage[]; title: stri
             <button
               key={img.id}
               onClick={() => setActive(i)}
-              className={`relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 ${
+              className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border-2 ${
                 i === active ? "border-blue-600" : "border-transparent"
               }`}
             >

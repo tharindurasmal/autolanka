@@ -16,7 +16,7 @@ export function ListingCard({ listing }: { listing: CardListing }) {
       href={`/vehicles/${listing.slug}`}
       className="group overflow-hidden rounded-xl border bg-white transition-shadow hover:shadow-md"
     >
-      <div className="relative aspect-[4/3] bg-gray-100">
+      <div className="relative aspect-4/3 bg-gray-100">
         {listing.images[0] ? (
           <Image
             src={listing.images[0].url}

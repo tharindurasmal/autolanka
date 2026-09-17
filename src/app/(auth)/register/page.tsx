@@ -65,8 +65,10 @@ export default function RegisterPage() {
       return;
     }
 
-    const result = await signUp.email({ name, email, password, phone } as any);
-    const authError = (result as any)?.error ?? (result as any)?.errors?.[0] ?? null;
+    type SignUpEmailInput = Parameters<typeof signUp.email>[0];
+    const result = await signUp.email({ name, email, password, phone } as unknown as SignUpEmailInput);
+    const r = result as Record<string, unknown>;
+    const authError = r.error ?? (Array.isArray(r.errors) ? r.errors[0] : null) ?? null;
 
     if (authError) {
       setError(getAuthErrorMessage(authError));

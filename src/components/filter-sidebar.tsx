@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { FUEL_TYPES, TRANSMISSIONS, VEHICLE_TYPES } from "@/lib/constants";
 import type { Brand, District } from "@prisma/client";
@@ -19,10 +19,6 @@ export function FilterSidebar({
   const [minPriceInput, setMinPriceInput] = useState(searchParams.get("minPrice") ?? "");
   const [maxPriceInput, setMaxPriceInput] = useState(searchParams.get("maxPrice") ?? "");
 
-  useEffect(() => {
-    setMinPriceInput(searchParams.get("minPrice") ?? "");
-    setMaxPriceInput(searchParams.get("maxPrice") ?? "");
-  }, [searchParams]);
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());

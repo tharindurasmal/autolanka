@@ -5,7 +5,7 @@ import { ListingForm } from "@/components/listing-form";
 export const metadata = { title: "Post your ad" };
 
 export default async function SellPage() {
-  const user = await requireUser();
+  await requireUser();
 
   const [brands, districts] = await Promise.all([
     prisma.brand.findMany({

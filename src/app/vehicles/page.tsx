@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ListingCard } from "@/components/listing-card";
 import { FilterSidebar } from "@/components/filter-sidebar";
 import { Pagination } from "@/components/pagination";
-import type { Prisma, VehicleType } from "@prisma/client";
+import type { Prisma, VehicleType, FuelType, Transmission } from "@prisma/client";
 
 const PAGE_SIZE = 20;
 
@@ -35,8 +35,8 @@ export default async function VehiclesPage({
     ...(params.type && { vehicleType: params.type as VehicleType }),
     ...(params.brand && { brand: { slug: params.brand } }),
     ...(params.district && { district: { slug: params.district } }),
-    ...(params.fuel && { fuelType: params.fuel as any }),
-    ...(params.transmission && { transmission: params.transmission as any }),
+    ...(params.fuel && { fuelType: params.fuel as FuelType }),
+    ...(params.transmission && { transmission: params.transmission as Transmission }),
     ...(params.minYear || params.maxYear
       ? {
           year: {

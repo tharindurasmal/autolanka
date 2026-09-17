@@ -20,9 +20,10 @@ async function main() {
       },
     });
     console.log(`Created new user: ${email}`);
-  } catch (error: any) {
-    if (error?.status !== 422 && error?.status !== 409 && !String(error?.message || "").toLowerCase().includes("already")) {
-      console.warn("signUpEmail warning:", error?.message || error);
+  } catch (error) {
+    const err = error as { status?: number; message?: string };
+    if (err.status !== 422 && err.status !== 409 && !String(err.message || "").toLowerCase().includes("already")) {
+      console.warn("signUpEmail warning:", err.message || error);
     }
   }
 

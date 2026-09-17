@@ -40,8 +40,8 @@ export default function LoginPage() {
       password: String(form.get("password")),
     });
 
-    const authError = (result as any)?.error ?? (result as any)?.errors?.[0] ?? null;
-
+   const r = result as Record<string, unknown>;
+   const authError = r.error ?? (Array.isArray(r.errors) ? r.errors[0] : null) ?? null;
     if (authError) {
       setError(getAuthErrorMessage(authError));
       setLoading(false);
@@ -109,7 +109,7 @@ export default function LoginPage() {
 
           <div className="mt-8 border-t border-slate-200 pt-6">
             <p className="text-center text-sm text-slate-600">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/register" className="font-semibold text-sky-600 hover:text-sky-700 transition">
                 Create one
               </Link>

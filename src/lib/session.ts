@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -16,7 +17,14 @@ export async function requireUser() {
 
 /** Returns the user only if they're an admin. */
 export async function requireAdmin() {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") redirect("/");
-  return user;
+  const session = await getSession();
+  if (!session?.user) redirect("/login");
+
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (userRecord?.role !== "ADMIN") redirect("/");
+  return session.user;
 }

@@ -15,12 +15,7 @@ export type ActionState = {
   fieldErrors?: Record<string, string[]>;
 };
 
-export async function createListing(
-  _prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const user = await requireUser();
-
+function getListingPayload(formData: FormData) {
   const imagesInput = formData.get("images");
   let images: { url: string; key: string }[] = [];
 
@@ -38,7 +33,7 @@ export async function createListing(
     }
   }
 
-  const payload = {
+  return {
     vehicleType: formData.get("vehicleType"),
     condition: formData.get("condition"),
     brandId: formData.get("brandId"),
@@ -59,7 +54,15 @@ export async function createListing(
     description: formData.get("description"),
     images,
   };
+}
 
+export async function createListing(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+
+  const payload = getListingPayload(formData);
   const parsed = listingSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -133,7 +136,9 @@ export async function createListing(
       city: data.city,
       contactName: data.contactName,
       contactPhone: data.contactPhone,
-      status: "PENDING",
+      status: "ACTIVE",
+      publishedAt: new Date(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       userId: user.id,
     },
   });
@@ -148,6 +153,123 @@ export async function createListing(
   });
 
   revalidatePath("/dashboard/ads");
+  revalidatePath("/vehicles");
+  redirect("/dashboard/ads");
+}
+
+export async function updateListing(
+  listingId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+
+  const existing = await prisma.listing.findFirst({
+    where: { id: listingId, userId: user.id },
+    include: { images: true },
+  });
+
+  if (!existing) {
+    return {
+      success: false,
+      message: "This ad could not be found or is not yours to edit.",
+    };
+  }
+
+  const payload = getListingPayload(formData);
+  const parsed = listingSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string[]> = {};
+
+    for (const issue of parsed.error.issues) {
+      const key = (issue.path[0] ?? "form").toString();
+      fieldErrors[key] ??= [];
+      fieldErrors[key].push(issue.message);
+    }
+
+    return {
+      success: false,
+      message: "Please fix the highlighted fields and try again.",
+      fieldErrors,
+    };
+  }
+
+  const data = parsed.data;
+  const [brand, model] = await Promise.all([
+    prisma.brand.findUnique({ where: { id: data.brandId } }),
+    data.modelId ? prisma.model.findUnique({ where: { id: data.modelId } }) : null,
+  ]);
+
+  if (!brand) {
+    return {
+      success: false,
+      message: "The selected brand could not be found.",
+      fieldErrors: { brandId: ["Select a valid brand"] },
+    };
+  }
+
+  if (data.modelId && !model) {
+    return {
+      success: false,
+      message: "The selected model is no longer available.",
+      fieldErrors: { modelId: ["Select a valid model"] },
+    };
+  }
+
+  const titleParts = [brand.name, model?.name, data.trim, String(data.year)];
+  const title = titleParts.filter(Boolean).join(" ").trim() || `${brand.name} vehicle`;
+
+  const imagesToDelete = existing.images.map((image) => image.key).filter(Boolean);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.listingImage.deleteMany({ where: { listingId: existing.id } });
+
+    await tx.listing.update({
+      where: { id: existing.id },
+      data: {
+        title,
+        description: data.description,
+        vehicleType: data.vehicleType as VehicleType,
+        condition: data.condition as Condition,
+        brandId: data.brandId,
+        modelId: data.modelId || null,
+        trim: data.trim || null,
+        year: data.year,
+        mileage: data.mileage ?? null,
+        fuelType: data.fuelType as FuelType,
+        transmission: data.transmission as Transmission,
+        engineCc: data.engineCc ?? null,
+        exteriorColor: data.exteriorColor || null,
+        price: data.price,
+        negotiable: data.negotiable,
+        districtId: data.districtId,
+        city: data.city,
+        contactName: data.contactName,
+        contactPhone: data.contactPhone,
+        status: "ACTIVE",
+        publishedAt: existing.publishedAt ?? new Date(),
+        expiresAt: existing.expiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    await tx.listingImage.createMany({
+      data: data.images.map((image, index) => ({
+        listingId: existing.id,
+        url: image.url,
+        key: image.key,
+        order: index,
+      })),
+    });
+  });
+
+  if (imagesToDelete.length) {
+    await deleteUploadedFiles(imagesToDelete);
+  }
+
+  revalidatePath("/dashboard/ads");
+  revalidatePath("/vehicles");
+  revalidatePath(`/vehicles/${existing.slug}`);
   redirect("/dashboard/ads");
 }
 

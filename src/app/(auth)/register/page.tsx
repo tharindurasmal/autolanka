@@ -4,15 +4,39 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/auth-client";
+import { User, Mail, Phone, Lock, CheckCircle } from "lucide-react";
+
+function getAuthErrorMessage(value: unknown): string {
+  if (!value) return "Something went wrong. Please try again.";
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message;
+
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.message === "string") return obj.message;
+    if (Array.isArray(obj.errors) && obj.errors.length > 0) return getAuthErrorMessage(obj.errors[0]);
+    if (obj.error && typeof obj.error === "object") return getAuthErrorMessage(obj.error);
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
+function validateSriLankanPhone(phone: string): boolean {
+  // Sri Lankan phone validation: +94XXXXXXXXX only
+  const cleanPhone = phone.replace(/[\s\-]/g, "");
+  return /^\+94[0-9]{9}$/.test(cleanPhone);
+}
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setPhoneError(null);
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
@@ -21,6 +45,13 @@ export default function RegisterPage() {
     const phone = String(form.get("phone"));
     const password = String(form.get("password"));
     const confirm = String(form.get("confirm"));
+
+    // Validate phone
+    if (!validateSriLankanPhone(phone)) {
+      setPhoneError("Please enter a valid Sri Lankan phone number (e.g., +94712345678)");
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirm) {
       setError("Passwords do not match.");
@@ -34,14 +65,11 @@ export default function RegisterPage() {
       return;
     }
 
-    // `signUp.email` typings may not include custom fields like `phone`.
-    // Cast to `any` to pass additional fields handled by the server adapter.
     const result = await signUp.email({ name, email, password, phone } as any);
+    const authError = (result as any)?.error ?? (result as any)?.errors?.[0] ?? null;
 
-    const error = (result as any)?.error ?? (result as any)?.errors?.[0] ?? null;
-
-    if (error) {
-      setError((error as any).message ?? String(error) ?? "Could not create your account.");
+    if (authError) {
+      setError(getAuthErrorMessage(authError));
       setLoading(false);
       return;
     }
@@ -51,58 +79,120 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md rounded-xl border bg-white p-8 shadow-sm">
-      <h1 className="mb-1 text-2xl font-bold">Create your account</h1>
-      <p className="mb-6 text-sm text-gray-500">
-        Free. Post your first ad in two minutes.
-      </p>
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-sky-50 via-white to-slate-100 px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Decorative background element */}
+        <div className="absolute inset-0 -z-10 opacity-40">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-72 h-72 bg-sky-200 rounded-full mix-blend-multiply filter blur-3xl"></div>
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Full name" name="name" required />
-        <Field label="Email" name="email" type="email" required />
-        <Field label="Phone" name="phone" type="tel" placeholder="07XXXXXXXX" required />
-        <Field label="Password" name="password" type="password" required minLength={8} />
-        <Field label="Confirm password" name="confirm" type="password" required minLength={8} />
+        <div className="rounded-3xl bg-white/80 backdrop-blur-xl p-8 shadow-2xl border border-white/20">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Full name</label>
+              <div className="relative group">
+                <User className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400 transition group-focus-within:text-sky-500" />
+                <input
+                  name="name"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  placeholder="John Doe"
+                />
+              </div>
+            </div>
 
-        {error && (
-          <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>
-        )}
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Email address</label>
+              <div className="relative group">
+                <Mail className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400 transition group-focus-within:text-sky-500" />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-blue-600 py-2.5 font-medium text-white
-                     hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Creating account..." : "Create account"}
-        </button>
-      </form>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Phone number (Sri Lanka)</label>
+              <div className="relative group">
+                <Phone className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400 transition group-focus-within:text-sky-500" />
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  placeholder="+94712345678"
+                />
+              </div>
+              {phoneError && (
+                <p className="mt-1 text-xs text-red-600 font-medium">{phoneError}</p>
+              )}
+            </div>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
-        Already have an account?{" "}
-        <Link href="/login" className="font-medium text-blue-600 hover:underline">
-          Sign in
-        </Link>
-      </p>
-    </div>
-  );
-}
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400 transition group-focus-within:text-sky-500" />
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minLength={8}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  placeholder="••••••••"
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
+                <CheckCircle className="h-3.5 w-3.5 text-sky-500" />
+                At least 8 characters
+              </p>
+            </div>
 
-function Field({
-  label,
-  ...props
-}: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div>
-      <label htmlFor={props.name} className="mb-1 block text-sm font-medium">
-        {label}
-      </label>
-      <input
-        id={props.name}
-        {...props}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
-                   outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-      />
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Confirm password</label>
+              <div className="relative group">
+                <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-400 transition group-focus-within:text-sky-500" />
+                <input
+                  name="confirm"
+                  type="password"
+                  required
+                  minLength={8}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-red-50 p-3.5 text-sm text-red-700 border border-red-200 flex items-start gap-2">
+                <span className="text-red-500 font-bold mt-0.5">!</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-linear-to-r from-sky-500 to-sky-600 py-3 font-semibold text-white shadow-lg shadow-sky-500/30 transition hover:shadow-xl hover:shadow-sky-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            >
+              {loading ? "Creating account..." : "Create account"}
+            </button>
+          </form>
+
+          <div className="mt-8 border-t border-slate-200 pt-6">
+            <p className="text-center text-sm text-slate-600">
+              Already have an account?{" "}
+              <Link href="/login" className="font-semibold text-sky-600 hover:text-sky-700 transition">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

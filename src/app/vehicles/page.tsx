@@ -10,8 +10,12 @@ interface SearchParams {
   type?: string;
   brand?: string;
   district?: string;
+  fuel?: string;
+  transmission?: string;
   minPrice?: string;
   maxPrice?: string;
+  minYear?: string;
+  maxYear?: string;
   q?: string;
   page?: string;
 }
@@ -23,7 +27,7 @@ export default async function VehiclesPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const params = await searchParams; // Next.js 16: searchParams is a Promise
+  const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
 
   const where: Prisma.ListingWhereInput = {
@@ -31,6 +35,16 @@ export default async function VehiclesPage({
     ...(params.type && { vehicleType: params.type as VehicleType }),
     ...(params.brand && { brand: { slug: params.brand } }),
     ...(params.district && { district: { slug: params.district } }),
+    ...(params.fuel && { fuelType: params.fuel as any }),
+    ...(params.transmission && { transmission: params.transmission as any }),
+    ...(params.minYear || params.maxYear
+      ? {
+          year: {
+            ...(params.minYear && { gte: Number(params.minYear) }),
+            ...(params.maxYear && { lte: Number(params.maxYear) }),
+          },
+        }
+      : {}),
     ...(params.minPrice || params.maxPrice
       ? {
           price: {
@@ -51,7 +65,7 @@ export default async function VehiclesPage({
     prisma.listing.findMany({
       where,
       include: { images: { orderBy: { order: "asc" }, take: 1 }, brand: true, district: true },
-      orderBy: { publishedAt: "desc" },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -63,26 +77,37 @@ export default async function VehiclesPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr]">
-        <FilterSidebar brands={brands} districts={districts} />
+    <div className="bg-slate-100">
+      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:px-6">
+        <div className="mb-4">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+            Cars for Sale in Sri Lanka
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Displaying {total} search results
+          </p>
+        </div>
 
-        <div>
-          <p className="mb-4 text-sm text-gray-500">{total} vehicles found</p>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
+          <FilterSidebar brands={brands} districts={districts} />
 
-          {listings.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-12 text-center text-gray-500">
-              No vehicles match your filters.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} />
-              ))}
+          <div>
+            {listings.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">
+                No vehicles match your filters.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {listings.map((l) => (
+                  <ListingCard key={l.id} listing={l} />
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6">
+              <Pagination currentPage={page} totalPages={totalPages} />
             </div>
-          )}
-
-          <Pagination currentPage={page} totalPages={totalPages} />
+          </div>
         </div>
       </div>
     </div>

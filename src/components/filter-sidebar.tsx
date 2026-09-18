@@ -61,12 +61,13 @@ export function FilterSidebar({
   const [minPriceInput, setMinPriceInput] = useState(searchParams.get("minPrice") ?? "");
   const [maxPriceInput, setMaxPriceInput] = useState(searchParams.get("maxPrice") ?? "");
 
-  // Keep local inputs in sync whenever the URL changes from elsewhere
-  // (Reset button, a chip's X, browser back/forward, etc.)
-  useEffect(() => {
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParams.toString());
+
+  if (searchParams.toString() !== prevSearchParams) {
+    setPrevSearchParams(searchParams.toString());
     setMinPriceInput(searchParams.get("minPrice") ?? "");
     setMaxPriceInput(searchParams.get("maxPrice") ?? "");
-  }, [searchParams]);
+  }
 
   function pushParams(params: URLSearchParams) {
     params.delete("page");

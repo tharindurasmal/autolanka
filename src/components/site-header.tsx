@@ -20,7 +20,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-lg">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
       <Link href="/" className="flex items-center gap-3 text-xl font-black tracking-tight text-slate-900">
-        <span className="relative flex h-30 w-28 items-center justify-center">
+        <span className="relative flex h-14 w-38 items-center justify-center">
           <Image src="/newlogo.png" alt="AutoLanka" fill priority />
         </span>
       </Link>

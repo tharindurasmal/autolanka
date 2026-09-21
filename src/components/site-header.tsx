@@ -2,8 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { SignOutButton } from "./sign-out-button";
-import { MobileNav } from "./mobile-nav";
-import Image from "next/image";
 
 export async function SiteHeader() {
   const session = await getSession();
@@ -19,11 +17,12 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3 text-xl font-black tracking-tight text-slate-900">
-          <span className="relative flex h-14 w-38 items-center justify-center">
-            <Image src="/newlogo.png" alt="AutoLanka" fill priority />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500 text-sm text-white shadow-lg shadow-sky-500/30">
+            A
           </span>
+          AutoLanka
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
@@ -59,8 +58,6 @@ export async function SiteHeader() {
             </>
           )}
         </nav>
-
-        <MobileNav isLoggedIn={Boolean(session?.user)} isAdmin={isAdmin} />
       </div>
     </header>
   );

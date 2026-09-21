@@ -23,7 +23,7 @@ export default async function ProfilePage() {
   if (!profile) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Account</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Profile details</h1>
@@ -51,8 +51,8 @@ export default async function ProfilePage() {
 
         <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <h2 className="text-lg font-bold text-slate-900">Account actions</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <a href="/dashboard/profile/edit" className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Edit profile</a>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <a href="/dashboard/profile/edit" className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Edit profile</a>
           </div>
         </div>
       </div>

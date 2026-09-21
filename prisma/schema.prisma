@@ -46,7 +46,7 @@ enum Transmission {
 }
 
 enum ListingStatus {
-  DRAFT       // seller hasn't submitted yet
+  DRAFT       // seller draft or admin-disabled listing
   PENDING     // waiting for admin approval
   ACTIVE      // live on the site
   SOLD        // seller marked it sold
@@ -205,6 +205,7 @@ model Listing {
 
   // lifecycle
   status     ListingStatus @default(PENDING)
+  moderationNote String?
   isFeatured Boolean       @default(false)
   viewCount  Int           @default(0)
   publishedAt DateTime?

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -15,16 +15,10 @@ export function MobileNav({
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  // Close the menu when the route changes. Done during render (not
-  // in an effect) to avoid the react-hooks/set-state-in-effect lint
-  // error — this is React's documented pattern for "adjusting state
-  // when a prop changes."
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname);
-    if (open) setOpen(false);
-  }
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";

@@ -7,6 +7,7 @@ import type { Prisma, VehicleType, FuelType, Transmission } from "@prisma/client
 const PAGE_SIZE = 20;
 
 interface SearchParams {
+  model?: string;
   type?: string;
   brand?: string;
   district?: string;
@@ -32,6 +33,21 @@ export default async function VehiclesPage({
 
   const where: Prisma.ListingWhereInput = {
     status: "ACTIVE",
+    ...(params.model && {
+      OR: [
+        { title: { contains: params.model, mode: "insensitive" } },
+        {
+          model: {
+            is: {
+              OR: [
+                { name: { contains: params.model, mode: "insensitive" } },
+                { slug: { contains: params.model, mode: "insensitive" } },
+              ],
+            },
+          },
+        },
+      ],
+    }),
     ...(params.type && { vehicleType: params.type as VehicleType }),
     ...(params.brand && { brand: { slug: params.brand } }),
     ...(params.district && { district: { slug: params.district } }),
@@ -61,7 +77,7 @@ export default async function VehiclesPage({
     }),
   };
 
-  const [listings, total, brands, districts] = await Promise.all([
+  const [listings, total, brands, districts, modelSuggestions] = await Promise.all([
     prisma.listing.findMany({
       where,
       include: { images: { orderBy: { order: "asc" }, take: 1 }, brand: true, district: true },
@@ -72,6 +88,12 @@ export default async function VehiclesPage({
     prisma.listing.count({ where }),
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
     prisma.district.findMany({ orderBy: { name: "asc" } }),
+    prisma.model.findMany({
+      select: { name: true, slug: true },
+      distinct: ["slug"],
+      orderBy: { name: "asc" },
+      take: 200,
+    }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -88,25 +110,27 @@ export default async function VehiclesPage({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
-          <FilterSidebar brands={brands} districts={districts} />
+        <div className="space-y-5">
+          <FilterSidebar
+            brands={brands}
+            districts={districts}
+            modelSuggestions={modelSuggestions.map((model) => model.name)}
+          />
 
-          <div>
-            {listings.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">
-                No vehicles match your filters.
-              </div>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {listings.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-              </div>
-            )}
-
-            <div className="mt-6">
-              <Pagination currentPage={page} totalPages={totalPages} />
+          {listings.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">
+              No vehicles match your filters.
             </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {listings.map((l) => (
+                <ListingCard key={l.id} listing={l} />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-6">
+            <Pagination currentPage={page} totalPages={totalPages} />
           </div>
         </div>
       </div>

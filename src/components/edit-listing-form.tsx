@@ -34,9 +34,26 @@ export function EditListingForm({
       key: image.key,
     })),
   );
+  const [selectedVehicleType, setSelectedVehicleType] = useState(listing.vehicleType);
   const [selectedBrandId, setSelectedBrandId] = useState(listing.brandId);
+  const [selectedModelId, setSelectedModelId] = useState(listing.modelId ?? "");
 
-  const models = brands.find((b) => b.id === selectedBrandId)?.models ?? [];
+  const filteredBrands = brands.filter((brand) => brand.type === selectedVehicleType);
+  const models = filteredBrands.find((brand) => brand.id === selectedBrandId)?.models ?? [];
+  const needsReview = listing.status !== "ACTIVE";
+
+  const handleVehicleTypeChange = (value: string) => {
+    setSelectedVehicleType(value as typeof listing.vehicleType);
+    setSelectedBrandId("");
+    setSelectedModelId("");
+  };
+
+  const handleBrandChange = (value: string) => {
+    setSelectedBrandId(value);
+    setSelectedModelId("");
+  };
+
+  const nextStatus = needsReview ? "PENDING" : "ACTIVE";
 
   return (
     <form action={formAction} className="space-y-8 rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] sm:p-6">
@@ -46,15 +63,35 @@ export function EditListingForm({
         </p>
       )}
 
+      {needsReview && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">This ad is waiting for review.</p>
+          <p className="mt-1 text-amber-800">
+            {listing.moderationNote ?? "Please update the listing based on the admin note and submit it again for review."}
+          </p>
+        </div>
+      )}
+
       <Section title="Vehicle details">
         <Row>
-          <Select
-            name="vehicleType"
-            label="Type"
-            options={VEHICLE_TYPES}
-            defaultValue={listing.vehicleType}
-            error={state.fieldErrors?.vehicleType}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Type</label>
+            <select
+              name="vehicleType"
+              required
+              value={selectedVehicleType}
+              onChange={(e) => handleVehicleTypeChange(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            >
+              <option value="">Select...</option>
+              {VEHICLE_TYPES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <FieldError messages={state.fieldErrors?.vehicleType} />
+          </div>
           <Select
             name="condition"
             label="Condition"
@@ -71,11 +108,11 @@ export function EditListingForm({
               name="brandId"
               required
               value={selectedBrandId}
-              onChange={(e) => setSelectedBrandId(e.target.value)}
+              onChange={(e) => handleBrandChange(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
             >
               <option value="">Select brand</option>
-              {brands.map((b) => (
+              {filteredBrands.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
@@ -88,7 +125,8 @@ export function EditListingForm({
             <label className="mb-1 block text-sm font-medium text-slate-700">Model</label>
             <select
               name="modelId"
-              value={listing.modelId ?? ""}
+              value={selectedModelId}
+              onChange={(e) => setSelectedModelId(e.target.value)}
               disabled={!selectedBrandId}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white disabled:bg-slate-100"
             >
@@ -245,12 +283,14 @@ export function EditListingForm({
         <FieldError messages={state.fieldErrors?.images} />
       </Section>
 
-      <SubmitButton />
+      <input type="hidden" name="nextStatus" value={nextStatus} />
+
+      <SubmitButton label={needsReview ? "Submit for review" : "Save changes"} />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
 
   return (
@@ -259,7 +299,7 @@ function SubmitButton() {
       disabled={pending}
       className="w-full rounded-2xl bg-sky-600 px-4 py-3 text-base font-semibold text-white shadow-[0_10px_20px_rgba(14,116,144,0.25)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {pending ? "Saving changes..." : "Save changes"}
+      {pending ? "Saving changes..." : label}
     </button>
   );
 }

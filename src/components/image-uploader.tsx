@@ -18,7 +18,7 @@ export function ImageUploader({ value, onChange, maxFiles = 10 }: Props) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const remaining = maxFiles - value.length;
-  
+
   const { startUpload, isUploading } = useUploadThing("listingImages", {
     onClientUploadComplete: (files) => {
       setError(null);
@@ -51,7 +51,6 @@ export function ImageUploader({ value, onChange, maxFiles = 10 }: Props) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (!files) return;
-    
     await startUpload(Array.from(files));
   };
 
@@ -67,10 +66,9 @@ export function ImageUploader({ value, onChange, maxFiles = 10 }: Props) {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
     const files = e.dataTransfer.files;
     if (!files) return;
-    
+
     await startUpload(Array.from(files));
   };
 
@@ -86,7 +84,7 @@ export function ImageUploader({ value, onChange, maxFiles = 10 }: Props) {
       </div>
 
       {value.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {value.map((img, i) => (
             <div key={img.key} className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
               <Image src={img.url} alt={`Vehicle photo ${i + 1}`} fill sizes="(max-width: 640px) 33vw, 20vw" className="object-cover" />

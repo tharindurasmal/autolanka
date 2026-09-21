@@ -5,6 +5,8 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import {
   approveListing,
+  createBrand,
+  createModel,
   deleteListingAdmin,
   deleteUser,
   disableListing,
@@ -25,7 +27,7 @@ const statusLabel: Record<string, string> = {
 export default async function AdminModerationPage() {
   await requireAdmin();
 
-  const [pending, active, disabled, rejected, users] = await Promise.all([
+  const [pending, active, disabled, rejected, users, brands] = await Promise.all([
     prisma.listing.findMany({
       where: { status: "PENDING" },
       include: { images: { take: 1 }, user: { select: { name: true, email: true } } },
@@ -59,6 +61,10 @@ export default async function AdminModerationPage() {
           select: { id: true, status: true },
         },
       },
+    }),
+    prisma.brand.findMany({
+      include: { models: { orderBy: { name: "asc" } } },
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -109,6 +115,11 @@ export default async function AdminModerationPage() {
                 <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
                   {statusLabel[listing.status]}
                 </p>
+                {listing.moderationNote && (listing.status === "DRAFT" || listing.status === "REJECTED") && (
+                  <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    <span className="font-semibold">Seller note:</span> {listing.moderationNote}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2 md:justify-end">
@@ -129,11 +140,23 @@ export default async function AdminModerationPage() {
 
                 {listing.status === "ACTIVE" && (
                   <>
-                    <form action={disableListing.bind(null, listing.id)}>
-                      <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-600">
-                        Disable
-                      </button>
-                    </form>
+                    <details className="w-full rounded-xl border border-amber-200 bg-amber-50 p-3 md:w-72">
+                      <summary className="cursor-pointer list-none rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-600">
+                        Disable with note
+                      </summary>
+                      <form action={disableListing.bind(null, listing.id)} className="mt-3 space-y-2">
+                        <textarea
+                          name="note"
+                          required
+                          rows={3}
+                          placeholder="Explain why this ad was disabled and what the seller should fix before resubmitting."
+                          className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber-400"
+                        />
+                        <button className="w-full rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-600">
+                          Disable ad
+                        </button>
+                      </form>
+                    </details>
                     <form action={deleteListingAdmin.bind(null, listing.id)}>
                       <button className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-100">
                         Delete
@@ -186,6 +209,69 @@ export default async function AdminModerationPage() {
         <p className="text-sm uppercase tracking-[0.2em] text-sky-100">Admin dashboard</p>
         <h1 className="mt-2 text-3xl font-bold">Vehicle listings & users</h1>
       </div>
+
+      <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-2">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Add brand</h2>
+          <form action={createBrand} className="mt-3 space-y-3">
+            <input
+              name="name"
+              required
+              placeholder="Toyota"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            />
+            <select
+              name="type"
+              required
+              defaultValue=""
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            >
+              <option value="">Select vehicle type</option>
+              <option value="CAR">Car</option>
+              <option value="SUV">SUV</option>
+              <option value="VAN">Van</option>
+              <option value="MOTORCYCLE">Motorcycle</option>
+              <option value="THREE_WHEELER">Three wheeler</option>
+              <option value="BUS">Bus</option>
+              <option value="LORRY">Lorry</option>
+              <option value="TRACTOR">Tractor</option>
+              <option value="HEAVY_DUTY">Heavy duty</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
+              Add brand
+            </button>
+          </form>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Add model</h2>
+          <form action={createModel} className="mt-3 space-y-3">
+            <input
+              name="name"
+              required
+              placeholder="Corolla"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            />
+            <select
+              name="brandId"
+              required
+              defaultValue=""
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            >
+              <option value="">Select brand</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name} ({brand.type})
+                </option>
+              ))}
+            </select>
+            <button className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700">
+              Add model
+            </button>
+          </form>
+        </div>
+      </section>
 
       <div className="grid gap-4 md:grid-cols-4">
         {[{ label: "Pending", value: pending.length }, { label: "Active", value: active.length }, { label: "Disabled", value: disabled.length }, { label: "Users", value: users.length }].map((stat) => (

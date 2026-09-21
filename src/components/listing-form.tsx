@@ -24,9 +24,26 @@ const initialState: ActionState = { success: false };
 export function ListingForm({ brands, districts }: Props) {
   const [state, formAction] = useActionState(createListing, initialState);
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [selectedVehicleType, setSelectedVehicleType] = useState("");
   const [selectedBrandId, setSelectedBrandId] = useState("");
+  const [selectedModelId, setSelectedModelId] = useState("");
 
-  const models = brands.find((b) => b.id === selectedBrandId)?.models ?? [];
+  const filteredBrands = selectedVehicleType
+    ? brands.filter((brand) => brand.type === selectedVehicleType || brand.type === "OTHER")
+    : brands;
+
+  const models = filteredBrands.find((b) => b.id === selectedBrandId)?.models ?? [];
+
+  function handleVehicleTypeChange(value: string) {
+    setSelectedVehicleType(value);
+    setSelectedBrandId("");
+    setSelectedModelId("");
+  }
+
+  function handleBrandChange(value: string) {
+    setSelectedBrandId(value);
+    setSelectedModelId("");
+  }
 
   return (
     <form action={formAction} className="space-y-8">
@@ -36,7 +53,24 @@ export function ListingForm({ brands, districts }: Props) {
 
       <Section title="Vehicle details">
         <Row>
-          <Select name="vehicleType" label="Type" options={VEHICLE_TYPES} error={state.fieldErrors?.vehicleType} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Type</label>
+            <select
+              name="vehicleType"
+              required
+              value={selectedVehicleType}
+              onChange={(e) => handleVehicleTypeChange(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            >
+              <option value="">Select type</option>
+              {VEHICLE_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <FieldError messages={state.fieldErrors?.vehicleType} />
+          </div>
           <Select name="condition" label="Condition" options={CONDITIONS} error={state.fieldErrors?.condition} />
         </Row>
 
@@ -47,11 +81,12 @@ export function ListingForm({ brands, districts }: Props) {
               name="brandId"
               required
               value={selectedBrandId}
-              onChange={(e) => setSelectedBrandId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              onChange={(e) => handleBrandChange(e.target.value)}
+              disabled={!selectedVehicleType}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
             >
-              <option value="">Select brand</option>
-              {brands.map((b) => (
+              <option value="">{selectedVehicleType ? "Select brand" : "Select type first"}</option>
+              {filteredBrands.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
@@ -63,7 +98,9 @@ export function ListingForm({ brands, districts }: Props) {
             <select
               name="modelId"
               disabled={!selectedBrandId}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50"
+              value={selectedModelId}
+              onChange={(e) => setSelectedModelId(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white disabled:bg-slate-100"
             >
               <option value="">Select model</option>
               {models.map((m) => (
@@ -95,7 +132,7 @@ export function ListingForm({ brands, districts }: Props) {
         <Row>
           <Input name="price" label="Price (Rs.)" type="number" required error={state.fieldErrors?.price} />
           <label className="flex items-center gap-2 pt-7 text-sm">
-            <input type="checkbox" name="negotiable" defaultChecked className="h-4 w-4" />
+            <input type="checkbox" name="negotiable" defaultChecked className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
             Negotiable
           </label>
         </Row>
@@ -105,7 +142,7 @@ export function ListingForm({ brands, districts }: Props) {
         <Row>
           <div>
             <label className="mb-1 block text-sm font-medium">District</label>
-            <select name="districtId" required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="districtId" required className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white">
               <option value="">Select district</option>
               {districts.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -127,7 +164,7 @@ export function ListingForm({ brands, districts }: Props) {
           rows={6}
           required
           placeholder="Describe the vehicle's condition, service history, any modifications..."
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
         />
         <FieldError messages={state.fieldErrors?.description} />
       </Section>

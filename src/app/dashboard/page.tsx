@@ -24,13 +24,13 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Dashboard</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">Welcome back, {user.name}</h1>
         </div>
-        <Link href="/dashboard/ads" className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
+        <Link href="/dashboard/ads" className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 sm:w-auto">
           View all ads
         </Link>
       </div>
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
             </p>
           ) : (
             listings.map((listing) => (
-              <div key={listing.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-3">
+              <div key={listing.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative h-16 w-20 overflow-hidden rounded-xl bg-slate-100">
                     {listing.images[0] ? (
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
                   </div>
                 </div>
 
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                <span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
                   {listing.status}
                 </span>
               </div>

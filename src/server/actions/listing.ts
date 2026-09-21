@@ -7,7 +7,7 @@ import { uniqueSlug } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deleteUploadedFiles } from "@/lib/uploadthing-server";
-import { type Condition, type FuelType, type Transmission, type VehicleType } from "@prisma/client";
+import { type Condition, type FuelType, type ListingStatus, type Transmission, type VehicleType } from "@prisma/client";
 
 export type ActionState = {
   success: boolean;
@@ -82,6 +82,7 @@ export async function createListing(
   }
 
   const data = parsed.data;
+  const nextStatus = String(formData.get("nextStatus") ?? "ACTIVE") as ListingStatus;
   const [brand, model] = await Promise.all([
     prisma.brand.findUnique({ where: { id: data.brandId } }),
     data.modelId ? prisma.model.findUnique({ where: { id: data.modelId } }) : null,
@@ -92,6 +93,14 @@ export async function createListing(
       success: false,
       message: "The selected brand could not be found.",
       fieldErrors: { brandId: ["Select a valid brand"] },
+    };
+  }
+
+  if (brand.type !== data.vehicleType) {
+    return {
+      success: false,
+      message: "The selected brand does not match the vehicle type.",
+      fieldErrors: { brandId: ["Select a brand for the chosen vehicle type"] },
     };
   }
 
@@ -136,9 +145,9 @@ export async function createListing(
       city: data.city,
       contactName: data.contactName,
       contactPhone: data.contactPhone,
-      status: "ACTIVE",
-      publishedAt: new Date(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      status: nextStatus === "PENDING" ? "PENDING" : "ACTIVE",
+      publishedAt: nextStatus === "PENDING" ? null : new Date(),
+      expiresAt: nextStatus === "PENDING" ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       userId: user.id,
     },
   });
@@ -154,6 +163,7 @@ export async function createListing(
 
   revalidatePath("/dashboard/ads");
   revalidatePath("/vehicles");
+  revalidatePath("/admin/listings");
   redirect("/dashboard/ads");
 }
 
@@ -196,6 +206,7 @@ export async function updateListing(
   }
 
   const data = parsed.data;
+  const nextStatus = String(formData.get("nextStatus") ?? existing.status) as ListingStatus;
   const [brand, model] = await Promise.all([
     prisma.brand.findUnique({ where: { id: data.brandId } }),
     data.modelId ? prisma.model.findUnique({ where: { id: data.modelId } }) : null,
@@ -206,6 +217,14 @@ export async function updateListing(
       success: false,
       message: "The selected brand could not be found.",
       fieldErrors: { brandId: ["Select a valid brand"] },
+    };
+  }
+
+  if (brand.type !== data.vehicleType) {
+    return {
+      success: false,
+      message: "The selected brand does not match the vehicle type.",
+      fieldErrors: { brandId: ["Select a brand for the chosen vehicle type"] },
     };
   }
 
@@ -247,9 +266,9 @@ export async function updateListing(
         city: data.city,
         contactName: data.contactName,
         contactPhone: data.contactPhone,
-        status: "ACTIVE",
-        publishedAt: existing.publishedAt ?? new Date(),
-        expiresAt: existing.expiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        status: nextStatus,
+        publishedAt: nextStatus === "PENDING" ? null : existing.publishedAt ?? new Date(),
+        expiresAt: nextStatus === "PENDING" ? null : existing.expiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     });
 
@@ -269,6 +288,7 @@ export async function updateListing(
 
   revalidatePath("/dashboard/ads");
   revalidatePath("/vehicles");
+  revalidatePath("/admin/listings");
   revalidatePath(`/vehicles/${existing.slug}`);
   redirect("/dashboard/ads");
 }

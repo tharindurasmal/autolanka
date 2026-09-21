@@ -34,18 +34,18 @@ export default async function MyAdsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">My ads</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">Your listings</h1>
         </div>
-        <Link href="/sell" className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
+        <Link href="/sell" className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 sm:w-auto">
           + Post new ad
         </Link>
       </div>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="text-sm text-slate-500">{stat.label}</div>
@@ -56,8 +56,8 @@ export default async function MyAdsPage() {
 
       <div className="space-y-3">
         {listings.map((l) => (
-          <div key={l.id} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+          <div key={l.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:gap-4">
+            <div className="relative h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-20 sm:w-24 sm:flex-none">
               {l.images[0] ? (
                 <Image src={l.images[0].url} alt={l.title} fill className="object-cover" />
               ) : (
@@ -66,18 +66,24 @@ export default async function MyAdsPage() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-slate-900">{l.title}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate font-semibold text-slate-900">{l.title}</p>
+                <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[l.status]}`}>
+                  {l.status}
+                </span>
+              </div>
               <p className="text-sm text-slate-500">{formatPrice(l.price)}</p>
+              {l.moderationNote && (l.status === "DRAFT" || l.status === "REJECTED") && (
+                <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  <span className="font-semibold">Admin note:</span> {l.moderationNote}
+                </p>
+              )}
             </div>
 
-            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[l.status]}`}>
-              {l.status}
-            </span>
-
-            <div className="flex gap-2">
-              <Link href={`/dashboard/ads/${l.id}/edit`} className="inline-flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-700 transition hover:bg-sky-100">
+            <div className="flex flex-col gap-2 sm:flex-none sm:flex-row sm:justify-end">
+              <Link href={`/dashboard/ads/${l.id}/edit`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-100 sm:px-3 sm:py-1.5">
                 <Edit2 className="h-4 w-4" />
-                Edit
+                {l.status === "DRAFT" || l.status === "REJECTED" ? "Edit & resubmit" : "Edit"}
               </Link>
               <DeleteListingButton listingId={l.id} />
             </div>

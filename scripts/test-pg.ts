@@ -1,6 +1,7 @@
 import { Client } from 'pg';
 
 async function main(){
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } as any });
   try{
     await client.connect();

@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/session";
 import { deleteUploadedFiles } from "@/lib/uploadthing-server";
 import { uniqueSlug } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { VehicleType } from "@prisma/client";
 
 export async function approveListing(listingId: string) {
   await requireAdmin();
@@ -140,6 +141,7 @@ export async function createBrand(formData: FormData) {
   const type = String(formData.get("type") ?? "").trim();
 
   if (!name || !type) return;
+  if (!Object.values(VehicleType).includes(type as VehicleType)) return;
 
   const slug = uniqueSlug(name);
 
@@ -147,7 +149,7 @@ export async function createBrand(formData: FormData) {
     data: {
       name,
       slug,
-      type: type as any,
+      type: type as VehicleType,
     },
   });
 

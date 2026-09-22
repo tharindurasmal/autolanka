@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { formatPrice } from "@/lib/utils";
+import Image from "next/image";
 
 export default async function DashboardPage() {
   const user = await requireAdmin();
@@ -61,7 +62,13 @@ export default async function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <div className="relative h-16 w-20 overflow-hidden rounded-xl bg-slate-100">
                     {listing.images[0] ? (
-                      <img src={listing.images[0].url} alt={listing.title} className="h-full w-full object-cover" />
+                      <Image 
+                        src={listing.images[0].url} 
+                        alt={listing.title}
+                        width={80}
+                        height={64}
+                        className="h-full w-full object-cover" 
+                      />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-500">No image</div>
                     )}

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Car,
@@ -82,7 +82,10 @@ export function FilterSidebar({
   const [minPriceInput, setMinPriceInput] = useState(searchParams.get("minPrice") ?? "");
   const [maxPriceInput, setMaxPriceInput] = useState(searchParams.get("maxPrice") ?? "");
 
-  useEffect(() => {
+  const [prevSearch, setPrevSearch] = useState(currentSearch);
+
+  if (currentSearch !== prevSearch) {
+    setPrevSearch(currentSearch);
     setModelInput(searchParams.get("model") ?? "");
     setTypeInput(searchParams.get("type") ?? "");
     setBrandInput(searchParams.get("brand") ?? "");
@@ -93,7 +96,7 @@ export function FilterSidebar({
     setMaxYearInput(searchParams.get("maxYear") ?? "");
     setMinPriceInput(searchParams.get("minPrice") ?? "");
     setMaxPriceInput(searchParams.get("maxPrice") ?? "");
-  }, [currentSearch, searchParams]);
+  }
 
   function pushParams(params: URLSearchParams) {
     params.delete("page");

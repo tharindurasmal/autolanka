@@ -38,8 +38,8 @@ export async function SiteHeader() {
         <div className="hidden items-center justify-between gap-4 md:flex">
           <Link href="/" className="flex items-center gap-3 text-xl font-black tracking-tight text-slate-900">
             <Image
-              src="/newlogo.png"
-              alt="AutoLanka"
+              src="/buycarlk-logo.png"
+              alt="buycarlk"
               width={154}
               height={48}
               priority

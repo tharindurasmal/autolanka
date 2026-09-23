@@ -25,8 +25,8 @@ export async function SiteHeader() {
 
           <Link href="/" className="flex items-center justify-end text-xl font-black tracking-tight text-slate-900">
             <Image
-              src="/newlogo.png"
-              alt="AutoLanka"
+              src="/buycarlk-logo.png"
+              alt="buycarlk"
               width={154}
               height={48}
               priority

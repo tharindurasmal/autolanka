@@ -114,7 +114,7 @@ export default async function ListingDetailPage({ params }: Props) {
 
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <div className="text-3xl font-black leading-none text-sky-700 sm:text-4xl">
-                  {formatPrice(listing.price)}
+                  Rs. {formatPrice(listing.price).replace(/LKR/g, '').trim()}
                 </div>
                 {listing.negotiable && (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-700">

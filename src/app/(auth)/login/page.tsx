@@ -124,7 +124,7 @@ export default function LoginPage() {
       <div className="flex h-full w-full flex-1 items-center justify-center overflow-y-auto bg-white px-6 py-8 sm:px-10">
         <div className="w-full max-w-sm">
           <Link href="/" className="mb-8 flex items-center justify-center lg:hidden">
-            <Image src="/newlogo.png" alt="BuyCarLK" width={1286} height={440} priority className="h-9 w-auto" />
+            <Image src="/buycarlk-logo.png" alt="BuyCarLK" width={1286} height={440} priority className="h-9 w-auto" />
           </Link>
 
           <div className="mb-8">

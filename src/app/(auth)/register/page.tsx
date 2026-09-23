@@ -150,7 +150,7 @@ export default function RegisterPage() {
       <div className="flex h-full w-full flex-1 items-center justify-center overflow-y-auto bg-white px-6 py-10 sm:px-10">
         <div className="w-full max-w-sm">
           <Link href="/" className="mb-6 flex items-center justify-center lg:hidden">
-            <Image src="/newlogo.png" alt="BuyCarLK" width={1286} height={440} priority className="h-9 w-auto" />
+            <Image src="/buycarlk-logo.png" alt="BuyCarLK" width={1286} height={440} priority className="h-9 w-auto" />
           </Link>
 
           <div className="mb-6">
@@ -189,7 +189,7 @@ export default function RegisterPage() {
                   required
                   autoComplete="email"
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-100"
-                  placeholder="you@example.com"
+                  placeholder="you@gmail.com"
                 />
               </div>
             </div>

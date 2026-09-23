@@ -54,8 +54,8 @@ export function ListingCard({ listing }: { listing: CardListing }) {
           </div>
 
           <div className="mt-2 flex items-end justify-between gap-3">
-            <p className="text-xl font-black leading-none text-sky-700">
-              {formatPrice(listing.price)}
+            <p className="text-S font-black leading-none text-sky-700">
+              Rs. {formatPrice(listing.price).replace(/LKR/g, '').trim()}
             </p>
 
             {listing.negotiable && (

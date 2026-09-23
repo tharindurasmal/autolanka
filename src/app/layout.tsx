@@ -11,8 +11,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "AutoLanka — Buy and sell vehicles in Sri Lanka",
-    template: "%s | AutoLanka",
+    default: "BuyCarLK — Buy and sell vehicles in Sri Lanka",
+    template: "%s | BuyCarLK",
   },
   description: "Sri Lanka's vehicle marketplace. Cars, vans, SUVs, bikes and more.",
 };

@@ -3,16 +3,15 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  Car,
   ChevronDown,
-  Filter,
   Fuel,
-  MapPin,
-  Menu,
   Settings2,
   Tags,
   Wallet,
   X,
+  Search,
+  SlidersHorizontal,
+  RotateCcw
 } from "lucide-react";
 import { FUEL_TYPES, TRANSMISSIONS, VEHICLE_TYPES } from "@/lib/constants";
 import type { Brand, District } from "@prisma/client";
@@ -21,6 +20,82 @@ function formatRs(value: string) {
   const amount = Number(value);
   if (!value || Number.isNaN(amount)) return value;
   return new Intl.NumberFormat("en-LK").format(amount);
+}
+
+function QuickFilterPopup({
+  value,
+  onChange,
+  options,
+  placeholder,
+  alignRight = false,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  alignRight?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = options.find((o) => o.value === value)?.label || placeholder;
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex max-w-[105px] items-center justify-between gap-1.5 rounded-full border border-slate-300 bg-white py-1.5 pl-3 pr-2 text-xs font-medium text-slate-700 outline-none transition hover:border-slate-400 focus:border-sky-500 sm:max-w-[140px] sm:py-2 sm:pl-4 sm:pr-2.5 sm:text-sm"
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500 sm:h-4 sm:w-4" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className={`absolute top-full z-50 mt-1.5 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg sm:w-56 ${
+              alignRight ? "right-0" : "left-0"
+            }`}
+          >
+            <div className="max-h-60 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("");
+                  setIsOpen(false);
+                }}
+                className={`block w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                  !value ? "bg-sky-50 font-semibold text-sky-700" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {placeholder}
+              </button>
+              {options.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`block w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                    value === opt.value
+                      ? "bg-sky-50 font-semibold text-sky-700"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function FilterSelect({
@@ -46,7 +121,7 @@ function FilterSelect({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 pr-9 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+          className="w-full appearance-none rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 pr-9 text-sm outline-none transition focus:border-sky-500 focus:bg-white"
         >
           {children}
         </select>
@@ -81,6 +156,8 @@ export function FilterSidebar({
   const [maxYearInput, setMaxYearInput] = useState(searchParams.get("maxYear") ?? "");
   const [minPriceInput, setMinPriceInput] = useState(searchParams.get("minPrice") ?? "");
   const [maxPriceInput, setMaxPriceInput] = useState(searchParams.get("maxPrice") ?? "");
+  
+  const [sortInput, setSortInput] = useState(searchParams.get("sort") ?? "");
 
   const [prevSearch, setPrevSearch] = useState(currentSearch);
 
@@ -96,6 +173,7 @@ export function FilterSidebar({
     setMaxYearInput(searchParams.get("maxYear") ?? "");
     setMinPriceInput(searchParams.get("minPrice") ?? "");
     setMaxPriceInput(searchParams.get("maxPrice") ?? "");
+    setSortInput(searchParams.get("sort") ?? "");
   }
 
   function pushParams(params: URLSearchParams) {
@@ -117,7 +195,18 @@ export function FilterSidebar({
     if (maxYearInput) params.set("maxYear", maxYearInput);
     if (minPriceInput && Number(minPriceInput) > 0) params.set("minPrice", minPriceInput);
     if (maxPriceInput && Number(maxPriceInput) > 0) params.set("maxPrice", maxPriceInput);
+    if (sortInput) params.set("sort", sortInput);
 
+    pushParams(params);
+  }
+
+  function handleQuickFilterChange(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
     pushParams(params);
   }
 
@@ -132,6 +221,7 @@ export function FilterSidebar({
     setMaxYearInput("");
     setMinPriceInput("");
     setMaxPriceInput("");
+    setSortInput("");
     router.push(pathname);
   }
 
@@ -146,17 +236,8 @@ export function FilterSidebar({
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string }[] = [];
 
-    const modelVal = searchParams.get("model");
-    if (modelVal) chips.push({ key: "model", label: `Model: ${modelVal}` });
-
-    const typeVal = searchParams.get("type");
-    if (typeVal) chips.push({ key: "type", label: VEHICLE_TYPES.find((t) => t.value === typeVal)?.label ?? typeVal });
-
     const brandVal = searchParams.get("brand");
     if (brandVal) chips.push({ key: "brand", label: brands.find((b) => b.slug === brandVal)?.name ?? brandVal });
-
-    const districtVal = searchParams.get("district");
-    if (districtVal) chips.push({ key: "district", label: districts.find((d) => d.slug === districtVal)?.name ?? districtVal });
 
     const fuelVal = searchParams.get("fuel");
     if (fuelVal) chips.push({ key: "fuel", label: FUEL_TYPES.find((f) => f.value === fuelVal)?.label ?? fuelVal });
@@ -184,62 +265,22 @@ export function FilterSidebar({
     }
 
     return chips;
-  }, [brands, districts, searchParams]);
+  }, [brands, searchParams]);
 
   const activeCount = activeChips.length;
 
-  const modelListId = "model-suggestions";
-
-  const panel = (
-    <>
-      <div className="mb-4 text-center">
-        <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Find the best vehicle for you</h3>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">Search by model, brand, location, fuel or budget</p>
+  const advancedPanel = (
+    <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 sm:mt-6 sm:p-5">
+      <div className="mb-4">
+        <h3 className="text-base font-bold text-slate-900">Advanced Vehicle Filters</h3>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="sm:col-span-2 xl:col-span-1">
-          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            <Car className="h-4 w-4 text-slate-400" strokeWidth={2} />
-            Model
-          </label>
-          <input
-            value={modelInput}
-            onChange={(e) => setModelInput(e.target.value)}
-            list={modelListId}
-            placeholder="Civic, Corolla, AE90..."
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400"
-          />
-          <datalist id={modelListId}>
-            {Array.from(new Set(modelSuggestions)).map((model) => (
-              <option key={model} value={model} />
-            ))}
-          </datalist>
-        </div>
-
-        <FilterSelect icon={Car} label="Type" value={typeInput} onChange={setTypeInput}>
-          <option value="">All types</option>
-          {VEHICLE_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </FilterSelect>
-
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <FilterSelect icon={Tags} label="Brand" value={brandInput} onChange={setBrandInput}>
           <option value="">All brands</option>
           {brands.map((b) => (
             <option key={b.id} value={b.slug}>
               {b.name}
-            </option>
-          ))}
-        </FilterSelect>
-
-        <FilterSelect icon={MapPin} label="District" value={districtInput} onChange={setDistrictInput}>
-          <option value="">All districts</option>
-          {districts.map((d) => (
-            <option key={d.id} value={d.slug}>
-              {d.name}
             </option>
           ))}
         </FilterSelect>
@@ -264,12 +305,12 @@ export function FilterSidebar({
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3 xl:col-span-2">
           <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             <Wallet className="h-4 w-4 text-slate-400" strokeWidth={2} />
             Price range
           </label>
-          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-2.5">
             <input
               type="number"
               min={0}
@@ -277,7 +318,7 @@ export function FilterSidebar({
               value={minPriceInput}
               onChange={(e) => setMinPriceInput(e.target.value)}
               placeholder="Min"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:bg-white"
             />
             <input
               type="number"
@@ -286,35 +327,35 @@ export function FilterSidebar({
               value={maxPriceInput}
               onChange={(e) => setMaxPriceInput(e.target.value)}
               placeholder="Max"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:bg-white"
             />
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3 xl:col-span-2">
           <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             <Settings2 className="h-4 w-4 text-slate-400" strokeWidth={2} />
             Year range
           </label>
-          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-2.5">
             <input
               type="number"
               value={minYearInput}
               onChange={(e) => setMinYearInput(e.target.value)}
               placeholder="From"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:bg-white"
             />
             <input
               type="number"
               value={maxYearInput}
               onChange={(e) => setMaxYearInput(e.target.value)}
               placeholder="To"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-sky-500 focus:bg-white"
             />
           </div>
         </div>
 
-        <div className="flex items-end gap-2 lg:col-span-2">
+        <div className="flex items-end gap-2 lg:col-span-6 xl:col-span-2">
           <button
             type="button"
             onClick={resetFilters}
@@ -331,61 +372,150 @@ export function FilterSidebar({
           </button>
         </div>
       </div>
-
-      {activeCount > 0 && (
-        <div className="mt-4 flex flex-wrap gap-1.5 border-t border-slate-100 pt-4">
-          {activeChips.map((chip) => (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => removeFilter(chip.key)}
-              className="group flex items-center gap-1 rounded-full bg-sky-50 py-1 pl-2.5 pr-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
-            >
-              {chip.label}
-              <X className="h-3 w-3 text-sky-500 transition group-hover:text-sky-700" />
-            </button>
-          ))}
-        </div>
-      )}
-    </>
+    </div>
   );
 
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-500" />
-          <h2 className="text-lg font-bold text-slate-900">Filters</h2>
-          {activeCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1.5 text-[11px] font-semibold text-white">
-              {activeCount}
-            </span>
-          )}
+    <section className="w-full border-b border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6 sm:py-6">
+      <div className="mx-auto max-w-7xl">
+        
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div className="flex-1">
+            <h1 className="text-lg font-bold leading-snug text-slate-900 sm:text-2xl">
+              Buy and Sell vehicles
+            </h1>
+            <div className="mt-1 hidden items-center gap-1.5 text-sm text-slate-500 md:flex">
+              <span>Home</span>
+              <span className="text-slate-300">›</span>
+              <span className="font-semibold text-slate-800">All Vehicles in Sri Lanka</span>
+            </div>
+          </div>
+
+          <div className="relative w-full md:max-w-md">
+            <input
+              value={modelInput}
+              onChange={(e) => {
+                const val = e.target.value;
+                setModelInput(val);
+                if (val.trim() === "") {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete("model");
+                  pushParams(params);
+                }
+              }}
+              onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+              placeholder="Search car, bike, or vehicle model..."
+              className="w-full rounded-full border border-slate-300 py-2.5 pl-5 pr-[80px] text-sm outline-none transition focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 sm:py-3"
+            />
+            
+            {modelInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setModelInput("");
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete("model");
+                  pushParams(params);
+                }}
+                className="absolute right-[52px] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            )}
+
+            <button
+              onClick={applyFilters}
+              className="absolute bottom-1 right-1 top-1 flex aspect-square items-center justify-center rounded-full bg-[#ffc800] text-slate-900 transition hover:bg-yellow-500 sm:bottom-1.5 sm:right-1.5 sm:top-1.5"
+            >
+              <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {activeCount > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-6 sm:gap-2">
+          
+          <button
+            onClick={() => setOpen((prev) => !prev)}
+            aria-label="Toggle filters"
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-all sm:h-[38px] sm:w-[38px] ${
+              open || activeCount > 0
+                ? "border-sky-600 bg-sky-600 text-white shadow-sm"
+                : "border-sky-600 bg-sky-50 text-sky-600 hover:bg-sky-100"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+          </button>
+
+          <QuickFilterPopup
+            value={districtInput}
+            onChange={(val) => {
+              setDistrictInput(val);
+              handleQuickFilterChange("district", val);
+            }}
+            options={districts.map((d) => ({ value: d.slug, label: d.name }))}
+            placeholder="Sri Lanka"
+          />
+
+          <QuickFilterPopup
+            value={typeInput}
+            onChange={(val) => {
+              setTypeInput(val);
+              handleQuickFilterChange("type", val);
+            }}
+            options={VEHICLE_TYPES}
+            placeholder="Category"
+          />
+
+          <QuickFilterPopup
+            value={sortInput}
+            onChange={(val) => {
+              setSortInput(val);
+              handleQuickFilterChange("sort", val);
+            }}
+            options={[
+              { value: "newest", label: "Newest" },
+              { value: "price_asc", label: "Price: Low to High" },
+              { value: "price_desc", label: "Price: High to Low" },
+            ]}
+            placeholder="Sort"
+            alignRight
+          />
+
+          {/* Quick Reset Button */}
+          {(activeCount > 0 || modelInput || typeInput || districtInput || sortInput) && (
             <button
               type="button"
               onClick={resetFilters}
-              className="text-xs font-medium text-sky-600 hover:text-sky-700"
+              title="Reset Filters"
+              className="flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 sm:py-2 sm:text-sm"
             >
-              Reset all
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset</span>
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 lg:hidden"
-          >
-            <Menu className="h-4 w-4" />
-            {open ? "Hide filters" : "Search by filters"}
-          </button>
         </div>
-      </div>
 
-      <div className={`${open ? "block" : "hidden"} lg:block`}>{panel}</div>
+        {activeCount > 0 && !open && (
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {activeChips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => removeFilter(chip.key)}
+                className="group flex items-center gap-1 rounded-full bg-sky-50 py-1 pl-2.5 pr-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+              >
+                {chip.label}
+                <X className="h-3 w-3 text-sky-500 transition group-hover:text-sky-700" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className={`transition-all duration-300 ease-in-out ${open ? "block opacity-100" : "hidden opacity-0"}`}>
+          {advancedPanel}
+        </div>
+
+      </div>
     </section>
   );
 }

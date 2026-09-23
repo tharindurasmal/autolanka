@@ -103,7 +103,7 @@ export default async function VehiclesPage({
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 lg:px-6">
         <div className="mb-4">
           <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-            Cars for Sale in Sri Lanka
+            Sri Lanka best vehicle marketplace
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Displaying {total} search results

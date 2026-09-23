@@ -380,7 +380,7 @@ export function FilterSidebar({
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 lg:hidden"
           >
             <Menu className="h-4 w-4" />
-            {open ? "Hide filters" : "Show filters"}
+            {open ? "Hide filters" : "Search"}
           </button>
         </div>
       </div>

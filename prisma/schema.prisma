@@ -47,12 +47,12 @@ enum Transmission {
 }
 
 enum ListingStatus {
-  DRAFT       // seller draft or admin-disabled listing
-  PENDING     // waiting for admin approval
-  ACTIVE      // live on the site
-  SOLD        // seller marked it sold
-  EXPIRED     // passed expiresAt
-  REJECTED    // admin rejected it
+  DRAFT        // seller draft or admin-disabled listing
+  PENDING      // waiting for admin approval
+  ACTIVE       // live on the site
+  SOLD         // seller marked it sold
+  EXPIRED      // passed expiresAt
+  REJECTED     // admin rejected it
 }
 
 enum UserRole {
@@ -74,12 +74,12 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // our own extra fields
-  phone         String?
-  phoneVerified Boolean   @default(false)
-  phoneOtp      String?
+  phone             String?
+  phoneVerified     Boolean   @default(false)
+  phoneOtp          String?
   phoneOtpExpiresAt DateTime?
-  role          UserRole  @default(USER)
-  isBanned      Boolean   @default(false)
+  role              UserRole  @default(USER)
+  isBanned          Boolean   @default(false)
 
   sessions      Session[]
   accounts      Account[]
@@ -138,28 +138,34 @@ model Verification {
 // ──────────────────── DOMAIN MODELS ────────────────────
 
 model Brand {
-  id     String      @id @default(cuid())
-  name   String      @unique        // "Toyota"
-  slug   String      @unique        // "toyota"
-  logo   String?
-  type   VehicleType @default(CAR)
+  id       String      @id @default(cuid())
+  name     String                        // Clean name: e.g., "Toyota"
+  slug     String                        // Clean slug: e.g., "toyota"
+  logo     String?
+  type     VehicleType @default(CAR)
 
   models   Model[]
   listings Listing[]
 
+  // Composite unique constraints allow the same brand name to exist per vehicle type
+  @@unique([name, type])
+  @@unique([slug, type])
   @@map("brands")
 }
 
 model Model {
-  id      String @id @default(cuid())
-  name    String            // "Aqua"
-  slug    String
-  brandId String
+  id        String      @id @default(cuid())
+  name      String                        // e.g., "Hilux" or "Aqua"
+  slug      String
+  brandId   String
+  type      VehicleType @default(CAR)     // Associates model directly with its category
 
-  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  listings Listing[]
+  brand     Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  listings  Listing[]
 
-  @@unique([brandId, slug])   // "corolla" can exist under Toyota AND under another brand
+  // Composite unique key ensures models are unique per brand and vehicle type
+  @@unique([brandId, slug, type])
+  @@index([brandId, type])
   @@map("models")
 }
 
@@ -195,32 +201,32 @@ model Listing {
   exteriorColor String?
 
   // commercial
-  price      Int              // whole rupees
+  price      Int               // whole rupees
   negotiable Boolean @default(true)
 
   // location + contact
-  districtId  String
-  city        String
-  contactName String
+  districtId   String
+  city         String
+  contactName  String
   contactPhone String
 
   // lifecycle
-  status     ListingStatus @default(PENDING)
+  status         ListingStatus @default(PENDING)
   moderationNote String?
-  isFeatured Boolean       @default(false)
-  viewCount  Int           @default(0)
-  publishedAt DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  isFeatured     Boolean       @default(false)
+  viewCount      Int           @default(0)
+  publishedAt    DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   userId String
 
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  brand     Brand          @relation(fields: [brandId], references: [id])
-  model     Model?         @relation(fields: [modelId], references: [id])
-  district  District       @relation(fields: [districtId], references: [id])
-  images    ListingImage[]
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand    Brand    @relation(fields: [brandId], references: [id])
+  model    Model?   @relation(fields: [modelId], references: [id])
+  district District @relation(fields: [districtId], references: [id])
+  images   ListingImage[]
   favorites Favorite[]
 
   // indexes — these make filtering fast

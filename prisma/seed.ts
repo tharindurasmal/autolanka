@@ -42,16 +42,16 @@ async function main() {
   console.log("Seeding brands and models...");
   for (const b of BRANDS) {
     const brand = await prisma.brand.upsert({
-      where: { slug: slugify(b.name) },
+      where: { slug_type: { slug: slugify(b.name), type: b.type } },
       update: {},
       create: { name: b.name, slug: slugify(b.name), type: b.type },
     });
 
     for (const m of b.models) {
       await prisma.model.upsert({
-        where: { brandId_slug: { brandId: brand.id, slug: slugify(m) } },
+        where: { brandId_slug_type: { brandId: brand.id, slug: slugify(m), type: b.type } },
         update: {},
-        create: { name: m, slug: slugify(m), brandId: brand.id },
+        create: { name: m, slug: slugify(m), brandId: brand.id, type: b.type },
       });
     }
   }

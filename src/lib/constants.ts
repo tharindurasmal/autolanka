@@ -1,6 +1,19 @@
-import { VehicleType, Condition, FuelType, Transmission } from "@prisma/client";
+import { Condition, FuelType, Transmission } from "@prisma/client";
 
-export const VEHICLE_TYPES: { value: VehicleType; label: string }[] = [
+export type ExtendedVehicleType = 
+  | "CAR" 
+  | "VAN" 
+  | "SUV" 
+  | "MOTORCYCLE" 
+  | "THREE_WHEELER" 
+  | "BUS" 
+  | "LORRY" 
+  | "TRACTOR" 
+  | "HEAVY_DUTY" 
+  | "PICKUP" 
+  | "OTHER";
+
+export const VEHICLE_TYPES: { value: ExtendedVehicleType; label: string }[] = [
   { value: "CAR", label: "Car" },
   { value: "VAN", label: "Van" },
   { value: "SUV", label: "SUV / Jeep" },
@@ -8,6 +21,7 @@ export const VEHICLE_TYPES: { value: VehicleType; label: string }[] = [
   { value: "THREE_WHEELER", label: "Three Wheeler" },
   { value: "BUS", label: "Bus" },
   { value: "LORRY", label: "Lorry" },
+  { value: "PICKUP", label: "Pickups" },
   { value: "TRACTOR", label: "Tractor" },
   { value: "HEAVY_DUTY", label: "Heavy Duty" },
   { value: "OTHER", label: "Other" },

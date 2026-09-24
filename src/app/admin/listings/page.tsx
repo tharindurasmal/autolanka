@@ -229,6 +229,7 @@ export default async function AdminModerationPage() {
               <option value="">Select vehicle type</option>
               <option value="CAR">Car</option>
               <option value="SUV">SUV</option>
+              <option value="PICKUP">Pickup</option>
               <option value="VAN">Van</option>
               <option value="MOTORCYCLE">Motorcycle</option>
               <option value="THREE_WHEELER">Three wheeler</option>

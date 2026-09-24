@@ -20,6 +20,7 @@ enum VehicleType {
   LORRY
   TRACTOR
   HEAVY_DUTY
+  PICKUP
   OTHER
 }
 

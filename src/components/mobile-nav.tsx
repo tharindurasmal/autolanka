@@ -23,11 +23,11 @@ const QUICK_CATEGORIES = [
   { name: "SUVs", icon: CarFront, href: "/vehicles?type=SUV" },
   { name: "Vans", icon: Van, href: "/vehicles?type=VAN" },
   { name: "Buses", icon: Bus, href: "/vehicles?type=BUS" },
-  { name: "Bikes", icon: Bike, href: "/vehicles?type=MOTORBIKE" },
+  { name: "Bikes", icon: Bike, href: "/vehicles?type=MOTORCYCLE" },
   { 
     name: "Three Wheels", 
     customIcon: "/icons/rickshaw.png",
-    href: "/vehicles?type=THREE_WHEEL" 
+    href: "/vehicles?type=THREE_WHEELER" 
   },
   { name: "Lorries", icon: Truck, href: "/vehicles?type=LORRY" },
   { 

@@ -176,6 +176,13 @@ export function FilterSidebar({
     setSortInput(searchParams.get("sort") ?? "");
   }
 
+  // Deduplicate brands by name so each brand only appears once in the dropdown
+  const uniqueBrands = useMemo(() => {
+    return Array.from(
+      new Map(brands.map((brand) => [brand.name, brand])).values()
+    );
+  }, [brands]);
+
   function pushParams(params: URLSearchParams) {
     params.delete("page");
     const query = params.toString();
@@ -278,7 +285,7 @@ export function FilterSidebar({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <FilterSelect icon={Tags} label="Brand" value={brandInput} onChange={setBrandInput}>
           <option value="">All brands</option>
-          {brands.map((b) => (
+          {uniqueBrands.map((b) => (
             <option key={b.id} value={b.slug}>
               {b.name}
             </option>
@@ -453,7 +460,7 @@ export function FilterSidebar({
               handleQuickFilterChange("district", val);
             }}
             options={districts.map((d) => ({ value: d.slug, label: d.name }))}
-            placeholder="Sri Lanka"
+            placeholder="Location"
           />
 
           <QuickFilterPopup

@@ -1,6 +1,12 @@
-import { VehicleType } from "@prisma/client";
-import { prisma } from "../src/lib/prisma";
-import { slugify } from "../src/lib/utils";
+import { VehicleType, PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { slugify } from "../src/lib/utils"; // Adjust path if needed
+
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const DISTRICTS = [
   "Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya",
@@ -11,22 +17,33 @@ const DISTRICTS = [
 ];
 
 const BRANDS: { name: string; type: VehicleType; models: string[] }[] = [
-  { name: "Toyota", type: VehicleType.CAR,
-    models: ["Aqua", "Prius", "Corolla", "Axio", "Allion", "Premio", "Vitz", "Land Cruiser", "Hilux", "CHR"] },
-  { name: "Honda", type: VehicleType.CAR,
-    models: ["Fit", "Vezel", "Civic", "Grace", "Insight", "CR-V"] },
-  { name: "Nissan", type: VehicleType.CAR,
-    models: ["Leaf", "X-Trail", "March", "Sunny", "Bluebird"] },
-  { name: "Suzuki", type: VehicleType.CAR,
-    models: ["Alto", "Wagon R", "Swift", "Every", "Spacia"] },
-  { name: "Mitsubishi", type: VehicleType.CAR,
-    models: ["Montero", "Lancer", "Outlander", "Canter"] },
-  { name: "Bajaj", type: VehicleType.THREE_WHEELER,
-    models: ["RE", "Maxima", "Pulsar", "Discover"] },
-  { name: "Yamaha", type: VehicleType.MOTORCYCLE,
-    models: ["FZ", "Ray ZR", "MT-15", "Fascino"] },
-  { name: "TVS", type: VehicleType.MOTORCYCLE,
-    models: ["Apache", "Ntorq", "Jupiter"] },
+  // --- CARS ---
+  { name: "Toyota", type: VehicleType.CAR, models: ["Aqua", "Prius", "Corolla", "Axio", "Allion", "Premio", "Vitz"] },
+  { name: "Honda", type: VehicleType.CAR, models: ["Fit", "Civic", "Grace", "Insight"] },
+  { name: "Nissan", type: VehicleType.CAR, models: ["Leaf", "March", "Sunny", "Bluebird"] },
+  { name: "Suzuki", type: VehicleType.CAR, models: ["Alto", "Wagon R", "Swift", "Every", "Spacia"] },
+  { name: "Mitsubishi", type: VehicleType.CAR, models: ["Lancer"] },
+
+  // --- SUVS ---
+  { name: "Toyota", type: VehicleType.SUV, models: ["Land Cruiser", "CHR"] },
+  { name: "Honda", type: VehicleType.SUV, models: ["Vezel", "CR-V"] },
+  { name: "Nissan", type: VehicleType.SUV, models: ["X-Trail"] },
+  { name: "Mitsubishi", type: VehicleType.SUV, models: ["Montero", "Outlander"] },
+
+  // --- PICKUPS ---
+  { name: "Toyota", type: VehicleType.PICKUP, models: ["Hilux"] },
+  { name: "Isuzu", type: VehicleType.PICKUP, models: ["D-Max"] },
+  { name: "Ford", type: VehicleType.PICKUP, models: ["Ranger"] },
+
+  // --- LORRIES ---
+  { name: "Mitsubishi", type: VehicleType.LORRY, models: ["Canter"] },
+
+  // --- THREE WHEELERS ---
+  { name: "Bajaj", type: VehicleType.THREE_WHEELER, models: ["RE", "Maxima", "Pulsar", "Discover"] },
+
+  // --- MOTORCYCLES ---
+  { name: "Yamaha", type: VehicleType.MOTORCYCLE, models: ["FZ", "Ray ZR", "MT-15", "Fascino"] },
+  { name: "TVS", type: VehicleType.MOTORCYCLE, models: ["Apache", "Ntorq", "Jupiter"] },
 ];
 
 async function main() {
@@ -64,4 +81,7 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+    await pool.end();
+  });

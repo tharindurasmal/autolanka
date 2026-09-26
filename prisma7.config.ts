@@ -3,10 +3,17 @@ import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
+  migrations: {
+    // If you are using tsx (recommended):
+    seed: "npx tsx prisma/seed.ts",
+    
+    // OR if you are using ts-node:
+    // seed: "npx ts-node prisma/seed.ts",
+    
+    // OR if you are using bun:
+    // seed: "bun ./prisma/seed.ts",
+  },
   datasource: {
-    // 1. Tries DIRECT_URL (best for migrations)
-    // 2. Falls back to DATABASE_URL (what you set in Vercel)
-    // 3. Falls back to a dummy string (so GitHub Actions passes)
     url: process.env.DIRECT_URL || process.env.DATABASE_URL || "postgresql://dummy:dummy@localhost:5432/dummy",
   },
 });

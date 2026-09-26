@@ -28,11 +28,14 @@ export function ListingForm({ brands, districts }: Props) {
   const [selectedBrandId, setSelectedBrandId] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
 
+  // Filter brands that match the selected vehicle type
   const filteredBrands = selectedVehicleType
-    ? brands.filter((brand) => brand.type === selectedVehicleType || brand.type === "OTHER")
-    : brands;
+    ? brands.filter((brand) => brand.type === selectedVehicleType)
+    : [];
 
-  const models = filteredBrands.find((b) => b.id === selectedBrandId)?.models ?? [];
+  // Find the selected brand object and extract its models safely
+  const selectedBrandObject = filteredBrands.find((b) => b.id === selectedBrandId);
+  const models = selectedBrandObject ? selectedBrandObject.models : [];
 
   function handleVehicleTypeChange(value: string) {
     setSelectedVehicleType(value);
@@ -83,7 +86,7 @@ export function ListingForm({ brands, districts }: Props) {
               value={selectedBrandId}
               onChange={(e) => handleBrandChange(e.target.value)}
               disabled={!selectedVehicleType}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white disabled:bg-slate-100"
             >
               <option value="">{selectedVehicleType ? "Select brand" : "Select type first"}</option>
               {filteredBrands.map((b) => (

@@ -19,13 +19,19 @@ export default async function EditListingPage({
         brand: true,
         model: true,
         district: true,
+        city: true, // Included relational city object
       },
     }),
     prisma.brand.findMany({
       include: { models: { orderBy: { name: "asc" } } },
       orderBy: { name: "asc" },
     }),
-    prisma.district.findMany({ orderBy: { name: "asc" } }),
+    prisma.district.findMany({
+      include: {
+        cities: { orderBy: { name: "asc" } }, // Included relational cities list
+      },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   if (!listing) notFound();

@@ -5,15 +5,17 @@ import { useFormStatus } from "react-dom";
 import { updateListing, type ActionState } from "@/server/actions/listing";
 import { ImageUploader, type UploadedImage } from "@/components/image-uploader";
 import { VEHICLE_TYPES, CONDITIONS, FUEL_TYPES, TRANSMISSIONS } from "@/lib/constants";
-import type { Brand, Model, District, Listing, ListingImage } from "@prisma/client";
+import type { Brand, Model, District, City, Listing, ListingImage } from "@prisma/client";
 
 type BrandWithModels = Brand & { models: Model[] };
+type DistrictWithCities = District & { cities: City[] };
 
 type ListingWithRelations = Listing & {
   images: ListingImage[];
   brand: Brand;
   model: Model | null;
   district: District;
+  city: City | null;
 };
 
 const initialState: ActionState = { success: false };
@@ -25,7 +27,7 @@ export function EditListingForm({
 }: {
   listing: ListingWithRelations;
   brands: BrandWithModels[];
-  districts: District[];
+  districts: DistrictWithCities[];
 }) {
   const [state, formAction] = useActionState(updateListing.bind(null, listing.id), initialState);
   const [images, setImages] = useState<UploadedImage[]>(
@@ -37,9 +39,16 @@ export function EditListingForm({
   const [selectedVehicleType, setSelectedVehicleType] = useState(listing.vehicleType);
   const [selectedBrandId, setSelectedBrandId] = useState(listing.brandId);
   const [selectedModelId, setSelectedModelId] = useState(listing.modelId ?? "");
+  const [selectedDistrictId, setSelectedDistrictId] = useState(listing.districtId);
+  const [selectedCityId, setSelectedCityId] = useState(listing.cityId ?? "");
 
   const filteredBrands = brands.filter((brand) => brand.type === selectedVehicleType);
   const models = filteredBrands.find((brand) => brand.id === selectedBrandId)?.models ?? [];
+
+  // Find selected district object to populate its cities dynamically
+  const selectedDistrictObject = districts.find((d) => d.id === selectedDistrictId);
+  const availableCities = selectedDistrictObject ? selectedDistrictObject.cities : [];
+
   const needsReview = listing.status !== "ACTIVE";
 
   const handleVehicleTypeChange = (value: string) => {
@@ -51,6 +60,11 @@ export function EditListingForm({
   const handleBrandChange = (value: string) => {
     setSelectedBrandId(value);
     setSelectedModelId("");
+  };
+
+  const handleDistrictChange = (value: string) => {
+    setSelectedDistrictId(value);
+    setSelectedCityId("");
   };
 
   const nextStatus = needsReview ? "PENDING" : "ACTIVE";
@@ -225,7 +239,8 @@ export function EditListingForm({
             <select
               name="districtId"
               required
-              defaultValue={listing.districtId}
+              value={selectedDistrictId}
+              onChange={(e) => handleDistrictChange(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
             >
               <option value="">Select district</option>
@@ -237,14 +252,28 @@ export function EditListingForm({
             </select>
             <FieldError messages={state.fieldErrors?.districtId} />
           </div>
-          <Input
-            name="city"
-            label="City / town"
-            required
-            defaultValue={listing.city}
-            error={state.fieldErrors?.city}
-          />
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">City / town</label>
+            <select
+              name="cityId"
+              required
+              value={selectedCityId}
+              onChange={(e) => setSelectedCityId(e.target.value)}
+              disabled={!selectedDistrictId}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white disabled:bg-slate-100"
+            >
+              <option value="">{selectedDistrictId ? "Select city" : "Select district first"}</option>
+              {availableCities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <FieldError messages={state.fieldErrors?.cityId} />
+          </div>
         </Row>
+
         <Row>
           <Input
             name="contactName"

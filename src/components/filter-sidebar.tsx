@@ -137,7 +137,6 @@ function FilterSelect({
 export function FilterSidebar({
   brands,
   districts,
-  modelSuggestions = [],
 }: {
   brands: Brand[];
   districts: DistrictWithCities[];
@@ -181,9 +180,11 @@ export function FilterSidebar({
     setSortInput(searchParams.get("sort") ?? "");
   }
 
-  // Get cities belonging to the selected district
-  const selectedDistrictObj = districts.find((d) => d.slug === districtInput);
-  const availableCities = selectedDistrictObj ? selectedDistrictObj.cities : [];
+  // Get cities belonging to the selected district securely
+  const availableCities = useMemo(() => {
+    const found = districts.find((d) => d.slug === districtInput);
+    return found ? found.cities : [];
+  }, [districts, districtInput]);
 
   // Deduplicate brands by name
   const uniqueBrands = useMemo(() => {
@@ -264,8 +265,9 @@ export function FilterSidebar({
     }
 
     const cityVal = searchParams.get("city");
-    if (cityVal && selectedDistrictObj) {
-      const cityObj = selectedDistrictObj.cities.find((c) => c.slug === cityVal);
+    if (cityVal && districtVal) {
+      const parentDistrict = districts.find((d) => d.slug === districtVal);
+      const cityObj = parentDistrict?.cities.find((c) => c.slug === cityVal);
       if (cityObj) chips.push({ key: "city", label: cityObj.name });
     }
 
@@ -298,7 +300,7 @@ export function FilterSidebar({
     }
 
     return chips;
-  }, [brands, districts, selectedDistrictObj, searchParams]);
+  }, [brands, districts, searchParams]);
 
   const activeCount = activeChips.length;
 
@@ -309,7 +311,6 @@ export function FilterSidebar({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {/* District Filter */}
         <FilterSelect 
           icon={MapPin} 
           label="District" 
@@ -325,7 +326,6 @@ export function FilterSidebar({
           ))}
         </FilterSelect>
 
-        {/* City Filter */}
         <FilterSelect 
           icon={MapPin} 
           label="City / Town" 
@@ -513,7 +513,6 @@ export function FilterSidebar({
             onChange={(val) => {
               setDistrictInput(val);
               setCityInput("");
-              handleQuickFilterChange("district", val);
               const params = new URLSearchParams(searchParams.toString());
               if (val) params.set("district", val); else params.delete("district");
               params.delete("city");
@@ -548,7 +547,6 @@ export function FilterSidebar({
             alignRight
           />
 
-          {/* Quick Reset Button */}
           {(activeCount > 0 || modelInput || typeInput || districtInput || sortInput) && (
             <button
               type="button"

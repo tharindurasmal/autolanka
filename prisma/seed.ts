@@ -1,19 +1,114 @@
 import { VehicleType, PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { slugify } from "../src/lib/utils"; // Adjust path if needed
+import { slugify } from "../src/lib/utils";
 
 const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const DISTRICTS = [
-  "Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya",
-  "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar",
-  "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee",
-  "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla",
-  "Monaragala", "Ratnapura", "Kegalle",
+const DISTRICTS_WITH_CITIES: { name: string; cities: string[] }[] = [
+  { 
+    name: "Colombo", 
+    cities: ["Colombo", "Dehiwala-Mount Lavinia", "Moratuwa", "Sri Jayawardenepura Kotte", "Maharagama", "Kesbewa", "Kolonnawa", "Thimbirigasyaya", "Padukka", "Homagama", "Kaduwela"] 
+  },
+  { 
+    name: "Gampaha", 
+    cities: ["Gampaha", "Negombo", "Katunayake", "Ja-Ela", "Wattala", "Kadawatha", "Kelaniya", "Minuwangoda", "Divulapitiya", "Mirigama", "Attanagalla", "Biyagama"] 
+  },
+  { 
+    name: "Kalutara", 
+    cities: ["Kalutara", "Panadura", "Horana", "Beruwala", "Aluthgama", "Mathugama", "Bandaragama", "Ingiriya", "Bulathsinhala"] 
+  },
+  { 
+    name: "Kandy", 
+    cities: ["Kandy", "Peradeniya", "Katugastota", "Gampola", "Nawalapitiya", "Kundasale", "Teldeniya", "Akurana", "Kadugannawa", "Pilimatalawa"] 
+  },
+  { 
+    name: "Matale", 
+    cities: ["Matale", "Dambulla", "Sigiriya", "Rattota", "Galewela", "Yatawatta"] 
+  },
+  { 
+    name: "Nuwara Eliya", 
+    cities: ["Nuwara Eliya", "Hatton", "Talawakele", "Ginigathhena", "Maskeliya", "Ragala"] 
+  },
+  { 
+    name: "Galle", 
+    cities: ["Galle", "Ambalangoda", "Hikkaduwa", "Elpitiya", "Karapitiya", "Baddegama", "Bentota"] 
+  },
+  { 
+    name: "Matara", 
+    cities: ["Matara", "Weligama", "Dikwella", "Hakmana", "Kamburupitiya", "Akuressa"] 
+  },
+  { 
+    name: "Hambantota", 
+    cities: ["Hambantota", "Tangalle", "Tissamaharama", "Ambalantota", "Beliatta", "Weeraketiya"] 
+  },
+  { 
+    name: "Jaffna", 
+    cities: ["Jaffna", "Chavakachcheri", "Point Pedro", "Valvettithurai", "Chunnakam", "Nallur"] 
+  },
+  { 
+    name: "Kilinochchi", 
+    cities: ["Kilinochchi", "Paranthan", "Pallai"] 
+  },
+  { 
+    name: "Mannar", 
+    cities: ["Mannar", "Pesalai", "Murunkan"] 
+  },
+  { 
+    name: "Vavuniya", 
+    cities: ["Vavuniya", "Cheddikulam"] 
+  },
+  { 
+    name: "Mullaitivu", 
+    cities: ["Mullaitivu", "Puthukudiyiruppu", "Oddusuddan"] 
+  },
+  { 
+    name: "Batticaloa", 
+    cities: ["Batticaloa", "Kattankudy", "Eravur", "Kalkudah", "Valachchenai"] 
+  },
+  { 
+    name: "Ampara", 
+    cities: ["Ampara", "Akkaraipattu", "Kalmunai", "Sammanthurai", "Pottuvil", "Dehiattakandiya"] 
+  },
+  { 
+    name: "Trincomalee", 
+    cities: ["Trincomalee", "Kantalai", "Kinniya", "Muttur"] 
+  },
+  { 
+    name: "Kurunegala", 
+    cities: ["Kurunegala", "Kuliyapitiya", "Narammala", "Pannala", "Nikaweratiya", "Maho", "Giriulla"] 
+  },
+  { 
+    name: "Puttalam", 
+    cities: ["Puttalam", "Chilaw", "Wennappuwa", "Marawila", "Dankotuwa", "Kalpitiya"] 
+  },
+  { 
+    name: "Anuradhapura", 
+    cities: ["Anuradhapura", "Kekirawa", "Mihintale", "Eppawala", "Medawachchiya"] 
+  },
+  { 
+    name: "Polonnaruwa", 
+    cities: ["Polonnaruwa", "Hingurakgoda", "Kaduruwela", "Medirigiriya"] 
+  },
+  { 
+    name: "Badulla", 
+    cities: ["Badulla", "Bandarawela", "Haputale", "Welimada", "Mahiyanganaya", "Diyatalawa"] 
+  },
+  { 
+    name: "Monaragala", 
+    cities: ["Monaragala", "Wellawaya", "Buttala", "Bibile", "Kataragama"] 
+  },
+  { 
+    name: "Ratnapura", 
+    cities: ["Ratnapura", "Embilipitiya", "Balangoda", "Pelmadulla", "Eheliyagoda", "Kuruwita"] 
+  },
+  { 
+    name: "Kegalle", 
+    cities: ["Kegalle", "Mawanella", "Warakapola", "Rambukkana", "Deraniyagala", "Yatiyantota"] 
+  },
 ];
 
 const BRANDS: { name: string; type: VehicleType; models: string[] }[] = [
@@ -47,13 +142,21 @@ const BRANDS: { name: string; type: VehicleType; models: string[] }[] = [
 ];
 
 async function main() {
-  console.log("Seeding districts...");
-  for (const name of DISTRICTS) {
-    await prisma.district.upsert({
-      where: { slug: slugify(name) },
+  console.log("Seeding districts and cities...");
+  for (const item of DISTRICTS_WITH_CITIES) {
+    const district = await prisma.district.upsert({
+      where: { slug: slugify(item.name) },
       update: {},
-      create: { name, slug: slugify(name) },
+      create: { name: item.name, slug: slugify(item.name) },
     });
+
+    for (const cityName of item.cities) {
+      await prisma.city.upsert({
+        where: { districtId_slug: { districtId: district.id, slug: slugify(cityName) } },
+        update: {},
+        create: { name: cityName, slug: slugify(cityName), districtId: district.id },
+      });
+    }
   }
 
   console.log("Seeding brands and models...");

@@ -10,13 +10,14 @@ import {
   FUEL_TYPES,
   TRANSMISSIONS,
 } from "@/lib/constants";
-import type { Brand, Model, District } from "@prisma/client";
+import type { Brand, Model, District, City } from "@prisma/client";
 
+type DistrictWithCities = District & { cities: City[] };
 type BrandWithModels = Brand & { models: Model[] };
 
 interface Props {
   brands: BrandWithModels[];
-  districts: District[];
+  districts: DistrictWithCities[];
 }
 
 const initialState: ActionState = { success: false };
@@ -27,6 +28,8 @@ export function ListingForm({ brands, districts }: Props) {
   const [selectedVehicleType, setSelectedVehicleType] = useState("");
   const [selectedBrandId, setSelectedBrandId] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
+  const [selectedCityId, setSelectedCityId] = useState("");
 
   // Filter brands that match the selected vehicle type
   const filteredBrands = selectedVehicleType
@@ -37,6 +40,10 @@ export function ListingForm({ brands, districts }: Props) {
   const selectedBrandObject = filteredBrands.find((b) => b.id === selectedBrandId);
   const models = selectedBrandObject ? selectedBrandObject.models : [];
 
+  // Find the selected district object to extract its cities
+  const selectedDistrictObject = districts.find((d) => d.id === selectedDistrictId);
+  const availableCities = selectedDistrictObject ? selectedDistrictObject.cities : [];
+
   function handleVehicleTypeChange(value: string) {
     setSelectedVehicleType(value);
     setSelectedBrandId("");
@@ -46,6 +53,11 @@ export function ListingForm({ brands, districts }: Props) {
   function handleBrandChange(value: string) {
     setSelectedBrandId(value);
     setSelectedModelId("");
+  }
+
+  function handleDistrictChange(value: string) {
+    setSelectedDistrictId(value);
+    setSelectedCityId("");
   }
 
   return (
@@ -145,7 +157,13 @@ export function ListingForm({ brands, districts }: Props) {
         <Row>
           <div>
             <label className="mb-1 block text-sm font-medium">District</label>
-            <select name="districtId" required className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white">
+            <select
+              name="districtId"
+              required
+              value={selectedDistrictId}
+              onChange={(e) => handleDistrictChange(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
+            >
               <option value="">Select district</option>
               {districts.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -153,8 +171,26 @@ export function ListingForm({ brands, districts }: Props) {
             </select>
             <FieldError messages={state.fieldErrors?.districtId} />
           </div>
-          <Input name="city" label="City / town" required error={state.fieldErrors?.city} />
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">City / town</label>
+            <select
+              name="cityId"
+              required
+              value={selectedCityId}
+              onChange={(e) => setSelectedCityId(e.target.value)}
+              disabled={!selectedDistrictId}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:bg-white disabled:bg-slate-100"
+            >
+              <option value="">{selectedDistrictId ? "Select city" : "Select district first"}</option>
+              {availableCities.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <FieldError messages={state.fieldErrors?.cityId} />
+          </div>
         </Row>
+
         <Row>
           <Input name="contactName" label="Contact name" required error={state.fieldErrors?.contactName} />
           <Input name="contactPhone" label="Phone" type="tel" placeholder="07XXXXXXXX" required error={state.fieldErrors?.contactPhone} />

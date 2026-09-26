@@ -11,10 +11,13 @@ import {
   X,
   Search,
   SlidersHorizontal,
-  RotateCcw
+  RotateCcw,
+  MapPin
 } from "lucide-react";
 import { FUEL_TYPES, TRANSMISSIONS, VEHICLE_TYPES } from "@/lib/constants";
-import type { Brand, District } from "@prisma/client";
+import type { Brand, District, City } from "@prisma/client";
+
+type DistrictWithCities = District & { cities: City[] };
 
 function formatRs(value: string) {
   const amount = Number(value);
@@ -134,10 +137,9 @@ function FilterSelect({
 export function FilterSidebar({
   brands,
   districts,
-  modelSuggestions = [],
 }: {
   brands: Brand[];
-  districts: District[];
+  districts: DistrictWithCities[];
   modelSuggestions?: string[];
 }) {
   const router = useRouter();
@@ -150,6 +152,7 @@ export function FilterSidebar({
   const [typeInput, setTypeInput] = useState(searchParams.get("type") ?? "");
   const [brandInput, setBrandInput] = useState(searchParams.get("brand") ?? "");
   const [districtInput, setDistrictInput] = useState(searchParams.get("district") ?? "");
+  const [cityInput, setCityInput] = useState(searchParams.get("city") ?? "");
   const [fuelInput, setFuelInput] = useState(searchParams.get("fuel") ?? "");
   const [transmissionInput, setTransmissionInput] = useState(searchParams.get("transmission") ?? "");
   const [minYearInput, setMinYearInput] = useState(searchParams.get("minYear") ?? "");
@@ -167,6 +170,7 @@ export function FilterSidebar({
     setTypeInput(searchParams.get("type") ?? "");
     setBrandInput(searchParams.get("brand") ?? "");
     setDistrictInput(searchParams.get("district") ?? "");
+    setCityInput(searchParams.get("city") ?? "");
     setFuelInput(searchParams.get("fuel") ?? "");
     setTransmissionInput(searchParams.get("transmission") ?? "");
     setMinYearInput(searchParams.get("minYear") ?? "");
@@ -176,7 +180,13 @@ export function FilterSidebar({
     setSortInput(searchParams.get("sort") ?? "");
   }
 
-  // Deduplicate brands by name so each brand only appears once in the dropdown
+  // Get cities belonging to the selected district securely
+  const availableCities = useMemo(() => {
+    const found = districts.find((d) => d.slug === districtInput);
+    return found ? found.cities : [];
+  }, [districts, districtInput]);
+
+  // Deduplicate brands by name
   const uniqueBrands = useMemo(() => {
     return Array.from(
       new Map(brands.map((brand) => [brand.name, brand])).values()
@@ -196,6 +206,7 @@ export function FilterSidebar({
     if (typeInput) params.set("type", typeInput);
     if (brandInput) params.set("brand", brandInput);
     if (districtInput) params.set("district", districtInput);
+    if (cityInput) params.set("city", cityInput);
     if (fuelInput) params.set("fuel", fuelInput);
     if (transmissionInput) params.set("transmission", transmissionInput);
     if (minYearInput) params.set("minYear", minYearInput);
@@ -222,6 +233,7 @@ export function FilterSidebar({
     setTypeInput("");
     setBrandInput("");
     setDistrictInput("");
+    setCityInput("");
     setFuelInput("");
     setTransmissionInput("");
     setMinYearInput("");
@@ -235,6 +247,10 @@ export function FilterSidebar({
   function removeFilter(key: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.delete(key);
+    if (key === "district") {
+      params.delete("city");
+      setCityInput("");
+    }
     if (key === "minPrice") params.delete("minPrice");
     if (key === "maxPrice") params.delete("maxPrice");
     pushParams(params);
@@ -242,6 +258,18 @@ export function FilterSidebar({
 
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string }[] = [];
+
+    const districtVal = searchParams.get("district");
+    if (districtVal) {
+      chips.push({ key: "district", label: districts.find((d) => d.slug === districtVal)?.name ?? districtVal });
+    }
+
+    const cityVal = searchParams.get("city");
+    if (cityVal && districtVal) {
+      const parentDistrict = districts.find((d) => d.slug === districtVal);
+      const cityObj = parentDistrict?.cities.find((c) => c.slug === cityVal);
+      if (cityObj) chips.push({ key: "city", label: cityObj.name });
+    }
 
     const brandVal = searchParams.get("brand");
     if (brandVal) chips.push({ key: "brand", label: brands.find((b) => b.slug === brandVal)?.name ?? brandVal });
@@ -272,7 +300,7 @@ export function FilterSidebar({
     }
 
     return chips;
-  }, [brands, searchParams]);
+  }, [brands, districts, searchParams]);
 
   const activeCount = activeChips.length;
 
@@ -283,6 +311,33 @@ export function FilterSidebar({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <FilterSelect 
+          icon={MapPin} 
+          label="District" 
+          value={districtInput} 
+          onChange={(val) => {
+            setDistrictInput(val);
+            setCityInput("");
+          }}
+        >
+          <option value="">All districts</option>
+          {districts.map((d) => (
+            <option key={d.id} value={d.slug}>{d.name}</option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect 
+          icon={MapPin} 
+          label="City / Town" 
+          value={cityInput} 
+          onChange={setCityInput}
+        >
+          <option value="">{districtInput ? "All cities" : "Select district first"}</option>
+          {availableCities.map((c) => (
+            <option key={c.id} value={c.slug}>{c.name}</option>
+          ))}
+        </FilterSelect>
+
         <FilterSelect icon={Tags} label="Brand" value={brandInput} onChange={setBrandInput}>
           <option value="">All brands</option>
           {uniqueBrands.map((b) => (
@@ -457,7 +512,11 @@ export function FilterSidebar({
             value={districtInput}
             onChange={(val) => {
               setDistrictInput(val);
-              handleQuickFilterChange("district", val);
+              setCityInput("");
+              const params = new URLSearchParams(searchParams.toString());
+              if (val) params.set("district", val); else params.delete("district");
+              params.delete("city");
+              pushParams(params);
             }}
             options={districts.map((d) => ({ value: d.slug, label: d.name }))}
             placeholder="Location"
@@ -488,7 +547,6 @@ export function FilterSidebar({
             alignRight
           />
 
-          {/* Quick Reset Button */}
           {(activeCount > 0 || modelInput || typeInput || districtInput || sortInput) && (
             <button
               type="button"

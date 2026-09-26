@@ -36,7 +36,7 @@ export const listingSchema = z.object({
   negotiable: z.coerce.boolean().default(true),
 
   districtId: z.string().min(1, "Choose a district"),
-  city: z.string().min(2, "Enter a city or town"),
+  cityId: z.string().min(1, "Choose a city"), // Replaced 'city' string with relational 'cityId'
   contactName: z.string().min(2, "Enter a contact name"),
   contactPhone: z
     .string()

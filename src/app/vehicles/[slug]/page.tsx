@@ -21,6 +21,7 @@ async function getListing(slug: string) {
       brand: true,
       model: true,
       district: true,
+      city: true, // Included relational City model
       user: { select: { name: true, createdAt: true } },
     },
   });
@@ -92,6 +93,14 @@ export default async function ListingDetailPage({ params }: Props) {
           <Link href={`/vehicles?district=${listing.district.slug}`} className="transition hover:text-sky-600">
             {listing.district.name}
           </Link>
+          {listing.city && (
+            <>
+              <span className="text-slate-300">›</span>
+              <Link href={`/vehicles?district=${listing.district.slug}&city=${listing.city.slug}`} className="transition hover:text-sky-600">
+                {listing.city.name}
+              </Link>
+            </>
+          )}
           <span className="text-slate-300">›</span>
           <Link href="/vehicles" className="transition hover:text-sky-600">
             Vehicle
@@ -140,7 +149,7 @@ export default async function ListingDetailPage({ params }: Props) {
                     <span>•</span>
                     <span>{listing.publishedAt ? formatDistanceToNow(listing.publishedAt, { addSuffix: true }) : "Recently published"}</span>
                     <span>•</span>
-                    <span>{listing.city}, {listing.district.name}</span>
+                    <span>{listing.city?.name}, {listing.district.name}</span>
                   </div>
                 </div>
 
@@ -160,7 +169,7 @@ export default async function ListingDetailPage({ params }: Props) {
 
               <div className="mt-5 rounded-xl border border-slate-200 bg-white overflow-hidden sm:mt-6">
                 <dl className="divide-y divide-slate-200">
-                  <Spec label="Location" value={listing.city} />
+                  <Spec label="Location" value={listing.city?.name ?? "—"} />
                   <Spec label="Year" value={String(listing.year)} />
                   <Spec
                     label="Mileage"
@@ -212,7 +221,7 @@ export default async function ListingDetailPage({ params }: Props) {
               <div className="mt-3 space-y-2 text-xs text-slate-600 sm:mt-5 sm:space-y-3 sm:text-sm">
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:py-2.5">
                   <span>Location</span>
-                  <span className="font-semibold text-slate-900 truncate">{listing.city}</span>
+                  <span className="font-semibold text-slate-900 truncate">{listing.city?.name ?? "—"}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:py-2.5">
                   <span>District</span>

@@ -48,7 +48,7 @@ function getListingPayload(formData: FormData) {
     price: formData.get("price"),
     negotiable: formData.get("negotiable") === "on" || formData.get("negotiable") === "true",
     districtId: formData.get("districtId"),
-    city: formData.get("city"),
+    cityId: formData.get("cityId"), // Updated from city to cityId
     contactName: formData.get("contactName"),
     contactPhone: formData.get("contactPhone"),
     description: formData.get("description"),
@@ -142,7 +142,7 @@ export async function createListing(
       price: data.price,
       negotiable: data.negotiable,
       districtId: data.districtId,
-      city: data.city,
+      cityId: data.cityId, // Updated from city to cityId
       contactName: data.contactName,
       contactPhone: data.contactPhone,
       status: nextStatus === "PENDING" ? "PENDING" : "ACTIVE",
@@ -263,7 +263,7 @@ export async function updateListing(
         price: data.price,
         negotiable: data.negotiable,
         districtId: data.districtId,
-        city: data.city,
+        cityId: data.cityId, // Updated from city to cityId
         contactName: data.contactName,
         contactPhone: data.contactPhone,
         status: nextStatus,

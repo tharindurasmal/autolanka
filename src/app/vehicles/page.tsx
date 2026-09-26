@@ -11,6 +11,7 @@ interface SearchParams {
   type?: string;
   brand?: string;
   district?: string;
+  city?: string;
   fuel?: string;
   transmission?: string;
   minPrice?: string;
@@ -51,6 +52,7 @@ export default async function VehiclesPage({
     ...(params.type && { vehicleType: params.type as VehicleType }),
     ...(params.brand && { brand: { slug: params.brand } }),
     ...(params.district && { district: { slug: params.district } }),
+    ...(params.city && { city: { slug: params.city } }), // Added relational city filtering
     ...(params.fuel && { fuelType: params.fuel as FuelType }),
     ...(params.transmission && { transmission: params.transmission as Transmission }),
     ...(params.minYear || params.maxYear
@@ -80,14 +82,24 @@ export default async function VehiclesPage({
   const [listings, total, brands, districts, modelSuggestions] = await Promise.all([
     prisma.listing.findMany({
       where,
-      include: { images: { orderBy: { order: "asc" }, take: 1 }, brand: true, district: true },
+      include: { 
+        images: { orderBy: { order: "asc" }, take: 1 }, 
+        brand: true, 
+        district: true,
+        city: true // Included relational city object
+      },
       orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
     prisma.listing.count({ where }),
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.district.findMany({ orderBy: { name: "asc" } }),
+    prisma.district.findMany({
+      include: {
+        cities: { orderBy: { name: "asc" } },
+      },
+      orderBy: { name: "asc" },
+    }),
     prisma.model.findMany({
       select: { name: true, slug: true },
       distinct: ["slug"],

@@ -100,7 +100,7 @@ model Session {
 }
 
 model Account {
-  id                    String    @id
+  id                    String   @id
   accountId             String
   providerId            String
   userId                String
@@ -111,8 +111,8 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -133,11 +133,11 @@ model Verification {
 // ──────────────────── DOMAIN MODELS ────────────────────
 
 model Brand {
-  id     String      @id @default(cuid())
-  name   String                                // e.g., "Toyota"
-  slug   String                                // e.g., "toyota"
-  logo   String?
-  type   VehicleType @default(CAR)
+  id      String      @id @default(cuid())
+  name    String                                // e.g., "Toyota"
+  slug    String                                // e.g., "toyota"
+  logo    String?
+  type    VehicleType @default(CAR)
 
   models   Model[]
   listings Listing[]
@@ -150,12 +150,12 @@ model Brand {
 
 model Model {
   id      String      @id @default(cuid())
-  name    String                              // e.g., "Hilux" or "Aqua"
+  name    String                                // e.g., "Hilux" or "Aqua"
   slug    String
   brandId String
   type    VehicleType @default(CAR)
 
-  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brand    Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
   listings Listing[]
 
   // Ensures models are unique per brand and vehicle type combination
@@ -165,13 +165,28 @@ model Model {
 }
 
 model District {
-  id   String @id @default(cuid())
-  name String @unique
-  slug String @unique
+  id      String @id @default(cuid())
+  name    String @unique
+  slug    String @unique
 
-  listings Listing[]
+  cities    City[]
+  listings  Listing[]
 
   @@map("districts")
+}
+
+model City {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String
+  districtId String
+
+  district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  listings   Listing[]
+
+  @@unique([districtId, slug])
+  @@index([districtId])
+  @@map("cities")
 }
 
 model Listing {
@@ -197,7 +212,7 @@ model Listing {
   negotiable  Boolean @default(true)
 
   districtId  String
-  city        String
+  cityId      String?
   contactName String
   contactPhone String
 
@@ -212,10 +227,11 @@ model Listing {
 
   userId String
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  brand    Brand     @relation(fields: [brandId], references: [id])
-  model    Model?    @relation(fields: [modelId], references: [id])
-  district District  @relation(fields: [districtId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand    Brand    @relation(fields: [brandId], references: [id])
+  model    Model?   @relation(fields: [modelId], references: [id])
+  district District @relation(fields: [districtId], references: [id])
+  city     City?    @relation(fields: [cityId], references: [id])
   images   ListingImage[]
   favorites Favorite[]
 
@@ -223,6 +239,7 @@ model Listing {
   @@index([vehicleType, status])
   @@index([brandId, modelId])
   @@index([districtId])
+  @@index([cityId])
   @@index([price])
   @@index([userId])
   @@map("listings")

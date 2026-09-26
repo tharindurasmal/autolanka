@@ -16,7 +16,14 @@ export default async function SellPage() {
       },
       orderBy: { name: "asc" },
     }),
-    prisma.district.findMany({ orderBy: { name: "asc" } }),
+    prisma.district.findMany({
+      include: {
+        cities: {
+          orderBy: { name: "asc" },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return (

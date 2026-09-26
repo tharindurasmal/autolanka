@@ -9,7 +9,11 @@ export default async function SellPage() {
 
   const [brands, districts] = await Promise.all([
     prisma.brand.findMany({
-      include: { models: { orderBy: { name: "asc" } } },
+      include: { 
+        models: { 
+          orderBy: { name: "asc" } 
+        } 
+      },
       orderBy: { name: "asc" },
     }),
     prisma.district.findMany({ orderBy: { name: "asc" } }),

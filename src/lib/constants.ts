@@ -21,7 +21,7 @@ export const VEHICLE_TYPES: { value: ExtendedVehicleType; label: string }[] = [
   { value: "THREE_WHEELER", label: "Three Wheeler" },
   { value: "BUS", label: "Bus" },
   { value: "LORRY", label: "Lorry" },
-  { value: "PICKUP", label: "Pickups" },
+  { value: "PICKUP", label: "Pickup" },
   { value: "TRACTOR", label: "Tractor" },
   { value: "HEAVY_DUTY", label: "Heavy Duty" },
   { value: "OTHER", label: "Other" },
